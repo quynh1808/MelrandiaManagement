@@ -1,0 +1,91 @@
+<header class="site-header" data-site-header>
+    <div class="site-header-inner">
+        <a class="wordmark" href="/" aria-label="Melrandia - Trang chủ">
+            <img class="brand-avatar" src="/images/avatar.png" alt="" width="56" height="56" />
+            <span class="wordmark-copy">
+                <strong>Melrandia</strong>
+                <span>Internet of Things</span>
+            </span>
+        </a>
+
+        <nav class="desktop-nav" aria-label="Điều hướng chính">
+            <NavLink href="/" Match="NavLinkMatch.All">Trang chủ</NavLink>
+            <NavLink href="/gioi-thieu">Giới thiệu</NavLink>
+
+            <div class="nav-dropdown" data-nav-dropdown>
+                <span class="nav-dropdown-trigger">
+                    <NavLink href="/du-an">Dự án</NavLink>
+                    <button type="button" data-dropdown-toggle aria-expanded="false" aria-label="Mở danh sách dự án">
+                        <i class="chevron" aria-hidden="true"></i>
+                    </button>
+                </span>
+                <div class="nav-dropdown-menu project-dropdown" aria-label="Danh sách dự án">
+                    <a href="/du-an/ams"><span>01</span><strong>Aquaculture Monitoring System</strong><small>Giám sát nuôi trồng thủy sản</small></a>
+                    <a href="/du-an/agriculture-system"><span>02</span><strong>Agriculture System</strong><small>Định hướng nông nghiệp thông minh</small></a>
+                    <a class="dropdown-overview" href="/du-an">Xem tất cả dự án <i aria-hidden="true">→</i></a>
+                </div>
+            </div>
+
+            <div class="nav-dropdown" data-nav-dropdown>
+                <span class="nav-dropdown-trigger">
+                    <NavLink href="/bai-viet">Bài viết</NavLink>
+                    <button type="button" data-dropdown-toggle aria-expanded="false" aria-label="Mở danh mục bài viết">
+                        <i class="chevron" aria-hidden="true"></i>
+                    </button>
+                </span>
+                <div class="nav-dropdown-menu article-dropdown" aria-label="Danh mục bài viết">
+                    <a href="/bai-viet/kinh-te"><span>01</span><strong>Kinh tế</strong><small>Góc nhìn và câu chuyện thị trường</small></a>
+                    <a href="/bai-viet/cong-nghe"><span>02</span><strong>Công nghệ</strong><small>IoT, phần mềm và tự động hóa</small></a>
+                    <a href="/bai-viet/gioi-thieu-sach"><span>03</span><strong>Giới thiệu sách</strong><small>Tri thức đáng đọc và suy ngẫm</small></a>
+                    <a class="dropdown-overview" href="/bai-viet">Xem tất cả bài viết <i aria-hidden="true">→</i></a>
+                </div>
+            </div>
+
+            <NavLink href="/lien-he">Liên hệ</NavLink>
+        </nav>
+
+        <div class="header-tools">
+            <button class="theme-toggle" type="button" data-theme-toggle aria-label="Chuyển sang giao diện tối">
+                <span class="theme-icon" aria-hidden="true">
+                    <i class="sun-symbol">☀</i>
+                    <i class="moon-symbol">☾</i>
+                </span>
+            </button>
+            <span class="tool-divider" aria-hidden="true"></span>
+            <div class="language-picker" data-language-picker>
+                <button class="language-toggle" type="button" data-language-toggle aria-expanded="false" aria-label="Chọn ngôn ngữ">
+                    <span class="language-flag" aria-hidden="true">🇻🇳</span>
+                    <span class="language-code">VI</span>
+                    <i class="chevron" aria-hidden="true"></i>
+                </button>
+                <div class="language-menu" aria-label="Ngôn ngữ">
+                    <button type="button" class="is-active" data-language-vi><span class="language-option-flag" aria-hidden="true">🇻🇳</span><span>Tiếng Việt</span><i aria-hidden="true">✓</i></button>
+                    <button type="button" data-language-en><span class="language-option-flag" aria-hidden="true">🇬🇧</span><span>English</span><small>Sắp có</small></button>
+                </div>
+            </div>
+            <span class="tool-divider" aria-hidden="true"></span>
+            <a class="login-link" href="/login"><span>Đăng nhập</span><i aria-hidden="true">→</i></a>
+            <button class="mobile-menu-button" type="button" data-menu-toggle aria-expanded="false" aria-controls="mobile-navigation">
+                <span class="sr-only">Mở menu</span><i></i><i></i><i></i>
+            </button>
+        </div>
+    </div>
+
+    <nav id="mobile-navigation" class="mobile-nav" aria-label="Điều hướng trên điện thoại" data-mobile-nav>
+        <NavLink href="/" Match="NavLinkMatch.All">Trang chủ</NavLink>
+        <NavLink href="/gioi-thieu">Giới thiệu</NavLink>
+        <div class="mobile-nav-group">
+            <NavLink href="/du-an">Dự án</NavLink>
+            <a href="/du-an/ams">Aquaculture Monitoring System</a>
+            <a href="/du-an/agriculture-system">Agriculture System</a>
+        </div>
+        <div class="mobile-nav-group">
+            <NavLink href="/bai-viet">Bài viết</NavLink>
+            <a href="/bai-viet/kinh-te">Kinh tế</a>
+            <a href="/bai-viet/cong-nghe">Công nghệ</a>
+            <a href="/bai-viet/gioi-thieu-sach">Giới thiệu sách</a>
+        </div>
+        <NavLink href="/lien-he">Liên hệ</NavLink>
+        <NavLink href="/login">Đăng nhập</NavLink>
+    </nav>
+</header>

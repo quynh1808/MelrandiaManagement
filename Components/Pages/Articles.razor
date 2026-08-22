@@ -1,0 +1,21 @@
+@page "/bai-viet"
+@inject PublicArticleCatalog ArticleCatalog
+
+<PageTitle>Bài viết · Melrandia</PageTitle>
+
+<section class="simple-page wide-page">
+    <span class="page-kicker">Bài viết</span>
+    <h1>Góc nhìn và hành trình phát triển.</h1>
+    <p>Các bài viết sẽ được tổ chức theo ba chuyên mục rõ ràng để người đọc dễ theo dõi khi thư viện nội dung được mở rộng.</p>
+    <div class="category-grid">
+        @foreach (var category in ArticleCatalog.GetCategories())
+        {
+            <a class="category-card reveal" href="@($"/bai-viet/{category.Slug}")">
+                <span>@category.Sequence</span>
+                <h2>@category.DisplayName</h2>
+                <p>@category.Summary</p>
+                <strong>Xem chuyên mục <i aria-hidden="true">→</i></strong>
+            </a>
+        }
+    </div>
+</section>

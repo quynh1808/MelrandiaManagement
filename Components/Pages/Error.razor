@@ -1,0 +1,26 @@
+@page "/Error"
+@using System.Diagnostics
+
+<PageTitle>Có lỗi xảy ra · Melrandia</PageTitle>
+
+<section class="simple-page status-page">
+    <span class="page-kicker">Hệ thống</span>
+    <h1>Không thể hoàn tất yêu cầu.</h1>
+    <p>Melrandia đã ghi nhận sự cố. Vui lòng thử lại hoặc quay về trang chủ.</p>
+    @if (ShowRequestId)
+    {
+        <p class="request-id">Mã yêu cầu: <code>@RequestId</code></p>
+    }
+    <a class="button button-primary" href="/">Trở về trang chủ</a>
+</section>
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private string? RequestId { get; set; }
+    private bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
+
+    protected override void OnInitialized() =>
+        RequestId = Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
+}

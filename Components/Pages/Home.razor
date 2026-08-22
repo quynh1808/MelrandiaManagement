@@ -1,0 +1,98 @@
+@page "/"
+@inject PublicProjectCatalog ProjectCatalog
+
+<PageTitle>Melrandia · Internet of Things</PageTitle>
+<HeadContent>
+    <meta name="description" content="Melrandia kết nối và quản lý các dự án Internet of Things, giám sát và tự động hóa độc lập." />
+</HeadContent>
+
+<section class="home-hero">
+    <div class="hero-node node-a" aria-hidden="true"></div>
+    <div class="hero-node node-b" aria-hidden="true"></div>
+    <div class="hero-copy reveal is-visible">
+        <span class="eyebrow"><i></i> Melrandia · Internet of Things</span>
+        <h1>Kết nối ý tưởng<br />với <em>thế giới thực.</em></h1>
+        <p>Melrandia là không gian phát triển và quản lý các dự án Internet of Things độc lập, hướng dữ liệu quan sát được thành những hành động có giá trị trong thực tế.</p>
+        <div class="hero-actions">
+            <a class="button button-primary" href="#featured-projects">Khám phá dự án <span aria-hidden="true">→</span></a>
+            <a class="button button-secondary" href="/gioi-thieu">Tìm hiểu Melrandia</a>
+        </div>
+        <div class="hero-facts" aria-label="Thông tin chính">
+            <span><strong>01</strong><small>Dự án đầu tiên</small></span>
+            <span><strong>IoT</strong><small>Lĩnh vực phát triển</small></span>
+            <span><strong>LAN</strong><small>Môi trường hiện tại</small></span>
+        </div>
+    </div>
+    <div class="hero-visual reveal is-visible">
+        <ProjectConsoleGraphic />
+    </div>
+</section>
+
+<section class="statement-section reveal">
+    <span class="section-index">01</span>
+    <div>
+        <span class="eyebrow">Từ ý tưởng đến hệ thống thực tế</span>
+        <h2>Một điểm bắt đầu chung cho nhiều dự án độc lập.</h2>
+    </div>
+    <div class="statement-copy">
+        <p>Melrandia tập hợp các dự án trong lĩnh vực giám sát, tự động hóa và Internet of Things mà không buộc chúng phải dùng chung source code hoặc vòng đời phát hành.</p>
+        <a class="text-link" href="/gioi-thieu">Xem trang giới thiệu <span aria-hidden="true">→</span></a>
+    </div>
+</section>
+
+<section id="featured-projects" class="content-section projects-section">
+    <div class="section-heading reveal">
+        <div><span class="eyebrow">Dự án nổi bật</span><h2>Mỗi dự án giải quyết một bài toán riêng.</h2></div>
+        <a class="text-link" href="/du-an">Xem tất cả dự án <span aria-hidden="true">→</span></a>
+    </div>
+    <div class="project-grid">
+        @foreach (var project in ProjectCatalog.GetPublishedProjects().Where(project => project.IsFeatured))
+        {
+            <ProjectPreviewCard Project="project" />
+        }
+        <article class="project-card future-card reveal">
+            <span class="project-number">03</span>
+            <div class="future-graphic alternate" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+            <h3>Khả năng mở rộng</h3>
+            <p>Mỗi dự án có thể vận hành, cập nhật và bảo trì riêng nhưng vẫn xuất hiện trong cùng một hệ thống quản lý.</p>
+            <span class="muted-link">Thiết kế theo mô-đun</span>
+        </article>
+    </div>
+</section>
+
+<section class="content-section workflow-section">
+    <div class="section-heading reveal">
+        <div><span class="eyebrow">Quy trình phát triển</span><h2>Từ vấn đề thực tế đến vận hành bền vững.</h2></div>
+    </div>
+    <div class="workflow-grid">
+        <article class="reveal"><b>01</b><h3>Ý tưởng</h3><p>Xác định vấn đề thực tế và giá trị mà hệ thống cần tạo ra.</p></article>
+        <article class="reveal"><b>02</b><h3>Xây dựng</h3><p>Phát triển phần mềm, phần cứng và các kết nối cần thiết.</p></article>
+        <article class="reveal"><b>03</b><h3>Kiểm chứng</h3><p>Thử nghiệm dữ liệu, hành vi và khả năng phục hồi trong thực tế.</p></article>
+        <article class="reveal"><b>04</b><h3>Vận hành</h3><p>Theo dõi, bảo trì và tiếp tục cải tiến theo nhu cầu sử dụng.</p></article>
+    </div>
+</section>
+
+<section class="content-section articles-section">
+    <div class="section-heading reveal">
+        <div><span class="eyebrow">Góc phát triển</span><h2>Bài viết và cập nhật.</h2></div>
+        <a class="text-link" href="/bai-viet">Đến trang bài viết <span aria-hidden="true">→</span></a>
+    </div>
+    <div class="article-empty reveal">
+        <span>Chưa có bài viết được xuất bản</span>
+        <h3>Những ghi chép đầu tiên đang được chuẩn bị.</h3>
+        <p>Các cập nhật về quá trình nghiên cứu, xây dựng và vận hành dự án sẽ được đăng tại đây.</p>
+    </div>
+</section>
+
+<section class="home-cta reveal">
+    <div class="cta-network" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    <div>
+        <span class="eyebrow">Một hệ sinh thái có thể tiếp tục mở rộng</span>
+        <h2>Nhiều dự án độc lập.<br />Một điểm quản lý chung.</h2>
+        <p>Mỗi hệ thống được phát triển theo nhu cầu riêng nhưng có thể được truy cập và giám sát từ Melrandia.</p>
+    </div>
+    <div class="cta-actions">
+        <a class="button button-light" href="/du-an">Khám phá dự án</a>
+        <a class="button button-outline-light" href="/lien-he">Liên hệ</a>
+    </div>
+</section>

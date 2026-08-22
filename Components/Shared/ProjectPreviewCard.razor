@@ -1,0 +1,15 @@
+<article class="project-card reveal">
+    <span class="project-number">@Project.Sequence</span>
+    <div class="project-card-head">
+        <span class="project-initials">@Project.ShortName</span>
+        <span class="status-badge">@Project.Status</span>
+    </div>
+    <h3>@Project.DisplayName</h3>
+    <p>@Project.Summary</p>
+    <a href="@($"/du-an/{Project.Slug}")">Xem chi tiết <span aria-hidden="true">→</span></a>
+</article>
+
+@code {
+    [Parameter, EditorRequired]
+    public PublicProjectPreview Project { get; set; } = default!;
+}

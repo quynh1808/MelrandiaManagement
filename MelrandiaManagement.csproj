@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <EnableSdkContainerSupport>true</EnableSdkContainerSupport>
+    <ContainerRepository>melrandia-management</ContainerRepository>
+    <ContainerPort>8080</ContainerPort>
+    <ContainerUser>1654</ContainerUser>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <!-- Tests is a sibling project stored below the repository root. Exclude it
+         from Web SDK default globs so test source and generated obj files are
+         never compiled into the production application. -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);Tests/**</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- PublishContainer creates the OCI image directly from the .NET SDK. -->
+    <ContainerEnvironmentVariable Include="ASPNETCORE_HTTP_PORTS" Value="8080" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,16 @@
+@page "/du-an"
+@inject PublicProjectCatalog ProjectCatalog
+
+<PageTitle>Dự án · Melrandia</PageTitle>
+
+<section class="simple-page wide-page">
+    <span class="page-kicker">Dự án</span>
+    <h1>Những hệ thống đang được xây dựng.</h1>
+    <p>Mỗi dự án có source code, dữ liệu và vòng đời phát hành riêng nhưng cùng được giới thiệu và truy cập từ Melrandia.</p>
+    <div class="project-grid compact-project-grid">
+        @foreach (var project in ProjectCatalog.GetPublishedProjects())
+        {
+            <ProjectPreviewCard Project="project" />
+        }
+    </div>
+</section>

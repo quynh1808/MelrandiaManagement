@@ -1,0 +1,31 @@
+@page "/du-an/{Slug}"
+@inject PublicProjectCatalog ProjectCatalog
+
+@if (Project is null)
+{
+    <PageTitle>Không tìm thấy dự án · Melrandia</PageTitle>
+    <section class="simple-page status-page">
+        <span class="page-kicker">Dự án</span><h1>Không tìm thấy dự án.</h1>
+        <a class="text-link" href="/du-an">Xem danh sách dự án →</a>
+    </section>
+}
+else
+{
+    <PageTitle>@Project.ShortName · Melrandia</PageTitle>
+    <section class="simple-page project-detail-page">
+        <span class="page-kicker">@Project.Sequence · @Project.Status</span>
+        <h1>@Project.DisplayName</h1>
+        <p>@Project.Summary</p>
+        <div class="detail-note">Thông tin kỹ thuật và liên kết truy cập dự án sẽ được bổ sung khi Danh mục dự án được triển khai.</div>
+        <a class="text-link" href="/du-an">Trở về danh sách dự án →</a>
+    </section>
+}
+
+@code {
+    [Parameter]
+    public string Slug { get; set; } = string.Empty;
+
+    private PublicProjectPreview? Project { get; set; }
+
+    protected override void OnParametersSet() => Project = ProjectCatalog.FindBySlug(Slug);
+}
