@@ -5,13 +5,13 @@ MelrandiaManagement là website trung tâm của hệ sinh thái Melrandia. Ứn
 ## Phạm vi hiện tại
 
 - Trang chủ tiếng Việt, render tĩnh phía server.
-- Header desktop là một cụm flex thu gọn, căn giữa, gồm ảnh nhận diện, `Melrandia`, menu, icon theme, `VI/EN` và Đăng nhập.
+- Header desktop là một cụm flex thu gọn, căn giữa, gồm ảnh nhận diện, `Melrandia`, menu, icon theme, ảnh cờ Việt Nam + `VI` và Đăng nhập.
 - Menu thả xuống Dự án và Bài viết hỗ trợ hover, focus bàn phím và chạm trên màn hình cảm ứng.
 - Theme dùng cùng bảng màu xanh dương–cyan của AMS; nút theme/ngôn ngữ có icon và animation.
 - Nút Đăng nhập luôn dùng màu nhấn tương phản với theme hiện tại.
 - `EN` chỉ là trạng thái chuẩn bị, chưa có nội dung tiếng Anh.
 - Giao diện sáng/tối lưu bằng `localStorage` và có cookie dự phòng nên không reset khi tải lại trang.
-- Dark mode dùng chữ trắng hoặc gần trắng cho điều hướng và nội dung phụ để tăng khả năng đọc.
+- Light mode dùng chữ đen; dark mode dùng chữ trắng hoặc gần trắng cho điều hướng và nội dung phụ để tăng khả năng đọc.
 - Hiệu ứng xuất hiện nội dung khi cuộn và hỗ trợ `prefers-reduced-motion`.
 - Đồ họa nội dung dùng HTML/CSS; `wwwroot/images/avatar.png` là ảnh duy nhất, chỉ phục vụ nhận diện thương hiệu.
 - Route riêng cho Giới thiệu, Dự án, Bài viết, Liên hệ và Đăng nhập.
@@ -59,6 +59,8 @@ Mặc định Visual Studio/PlatformIO launch profile mở `http://localhost:510
 | `Services/PublicProjectCatalog.cs` | Catalog dự án tạm thời | Cô lập metadata dự án khỏi UI và chuẩn bị cho persistence |
 | `Services/PublicArticleCatalog.cs` | Catalog chuyên mục tạm thời | Giữ URL chuyên mục ổn định trước khi có CMS |
 | `wwwroot/images/avatar.png` | Ảnh nhận diện | Hiển thị bên trái wordmark; không chứa dữ liệu nghiệp vụ |
+| `wwwroot/images/languages/VI.svg` | Cờ Tiếng Việt | Nhận diện ngôn ngữ đang hoạt động trên header và menu |
+| `wwwroot/images/languages/EN.svg` | Cờ English | Nhận diện lựa chọn English đang ở trạng thái chuẩn bị |
 | `wwwroot/app.css` | Design system | Theme, Times New Roman, responsive, layout và animation |
 | `wwwroot/js/theme-init.js` | Khởi tạo theme | Áp dụng theme trước khi trang vẽ để hạn chế chớp màu |
 | `wwwroot/js/site.js` | Progressive enhancement | Theme toggle, menu mobile, thông báo EN và scroll reveal |

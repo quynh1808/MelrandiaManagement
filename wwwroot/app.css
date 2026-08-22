@@ -4,12 +4,12 @@
     --surface: #ffffff;
     --surface-2: #f7f9fd;
     --surface-3: #edf2fa;
-    --text: #15233b;
-    --muted: #64748b;
+    --text: #070b12;
+    --muted: #141922;
     --primary: #2463eb;
     --primary-strong: #174bc4;
     --primary-soft: #eaf1ff;
-    --navy: #17347f;
+    --navy: #05070b;
     --cyan: #08a9c9;
     --paper: var(--bg);
     --paper-strong: var(--surface);
@@ -71,6 +71,9 @@ button { color: inherit; }
 h1, h2, h3, p { margin-top: 0; }
 ::selection { background: var(--aqua); color: #08101f; }
 :focus-visible { outline: 2px solid var(--aqua); outline-offset: 4px; }
+/* FocusOnNavigate vẫn đưa focus tới h1 cho trình đọc màn hình, nhưng tiêu đề
+   không cần focus ring trực quan vì không phải thành phần tương tác. */
+h1:focus, h1:focus-visible { outline: none; }
 
 .sr-only {
     position: absolute;
@@ -207,17 +210,16 @@ h1, h2, h3, p { margin-top: 0; }
 
 .language-picker { position: relative; }
 .language-toggle > .chevron { margin: 0 2px 0 1px; }
-.globe-icon { position: relative; width: 27px; height: 27px; display: block; overflow: hidden; border: 1px solid currentColor; border-radius: 50%; transition: transform .35s ease; }
-.globe-icon::before, .globe-icon::after, .globe-icon i { content: ""; position: absolute; display: block; }
-.globe-icon::before { top: 4px; right: 7px; bottom: 4px; left: 7px; border-right: 1px solid currentColor; border-left: 1px solid currentColor; border-radius: 50%; }
-.globe-icon::after { top: 50%; right: 3px; left: 3px; border-top: 1px solid currentColor; }
-.globe-icon i { top: 7px; right: 2px; left: 2px; height: 10px; border-top: 1px solid currentColor; border-bottom: 1px solid currentColor; border-radius: 50%; }
-.language-picker:hover .globe-icon, .language-picker:focus-within .globe-icon, .language-picker.is-open .globe-icon { transform: rotate(18deg); }
+.language-flag { width: 28px; height: 19px; display: block; object-fit: contain; border: 1px solid color-mix(in srgb, var(--line-strong) 80%, transparent); border-radius: 2px; box-shadow: 0 2px 6px rgba(35, 58, 99, .13); transform-origin: center; transition: transform .3s ease; }
+.language-code { min-width: 18px; color: currentColor; font-size: 14px; font-weight: 700; text-align: center; }
+.language-picker:hover .language-flag, .language-picker:focus-within .language-flag, .language-picker.is-open .language-flag { transform: translateY(-1px) rotate(-4deg) scale(1.08); }
 .language-menu { position: absolute; z-index: 120; top: calc(100% + 8px); right: 0; width: 225px; padding: 8px; display: grid; border: 1px solid var(--line); border-radius: 14px; background: var(--paper-strong); box-shadow: 0 18px 44px rgba(35, 58, 99, .18); opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(10px); transition: opacity .2s ease, visibility .2s ease, transform .22s ease; }
+.language-menu::before { content: ""; position: absolute; right: 0; bottom: 100%; left: 0; height: 12px; }
 .language-picker:hover .language-menu, .language-picker:focus-within .language-menu, .language-picker.is-open .language-menu { opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0); }
 .language-menu button { min-height: 42px; padding: 8px 10px; display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 8px; border: 0; border-radius: 9px; background: transparent; color: var(--ink-soft); text-align: left; cursor: pointer; }
 .language-menu button:hover { color: var(--primary); background: var(--primary-soft); }
-.language-menu button > span { color: var(--primary); font-size: 12px; font-weight: 700; }
+.language-menu button > span:not(.language-option-flag) { color: var(--ink); font-size: 13px; font-weight: 700; }
+.language-menu .language-option-flag { width: 26px; height: 17px; display: block; object-fit: contain; border: 1px solid var(--line); border-radius: 2px; }
 .language-menu button > i { color: var(--primary); font-style: normal; }
 .language-menu button > small { color: var(--ink-soft); font-size: 10px; }
 .language-menu .is-active { color: var(--ink); }
@@ -241,6 +243,15 @@ h1, h2, h3, p { margin-top: 0; }
 :root[data-theme="dark"] .desktop-nav a.active,
 :root[data-theme="dark"] .mobile-nav a:hover,
 :root[data-theme="dark"] .mobile-nav a.active { color: #ffffff; }
+:root[data-theme="light"] .desktop-nav a,
+:root[data-theme="light"] .mobile-nav a,
+:root[data-theme="light"] .nav-dropdown-trigger > button,
+:root[data-theme="light"] .theme-toggle,
+:root[data-theme="light"] .language-toggle { color: #000000; }
+:root[data-theme="light"] .desktop-nav a:hover,
+:root[data-theme="light"] .desktop-nav a.active,
+:root[data-theme="light"] .mobile-nav a:hover,
+:root[data-theme="light"] .mobile-nav a.active { color: #000000; }
 
 @keyframes theme-icon-pop { 0%, 100% { transform: scale(1); } 45% { transform: scale(.82) rotate(-8deg); } 70% { transform: scale(1.08) rotate(4deg); } }
 
@@ -462,7 +473,7 @@ h1, h2, h3, p { margin-top: 0; }
     .header-tools { gap: 8px; font-size: 13px; }
     .header-tools .tool-divider { display: none; }
     .theme-toggle, .language-toggle { padding: 2px; }
-    .language-toggle > span:not(.globe-icon), .language-toggle > .chevron { display: none; }
+    .language-toggle > .chevron { display: none; }
     .brand-avatar { width: 46px; height: 46px; flex-basis: 46px; }
     .mobile-menu-button { width: 35px; height: 35px; }
     .home-hero { padding: 62px 20px; }
