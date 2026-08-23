@@ -12,4 +12,6 @@ public sealed record PublicProjectPreview(
     string Summary,
     string Status,
     string Sequence,
-    bool IsFeatured);
+    bool IsFeatured,
+    bool IsEnabled,
+    string PublicUrl);

@@ -1,37 +1,69 @@
+using MelrandiaManagement.Configuration;
+using MelrandiaManagement.Data;
 using MelrandiaManagement.Models;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 
 namespace MelrandiaManagement.Services;
 
 /// <summary>
-/// Supplies public project metadata without coupling MelrandiaManagement to an
-/// AMS database. A persistent registry can replace this implementation later.
+/// Read-only adapter from the durable Project Registry to public presentation models. A short
+/// process-local cache prevents the header and page body from issuing the same query while an
+/// explicit invalidation keeps administrator changes immediately visible on this instance.
 /// </summary>
-public sealed class PublicProjectCatalog
+public sealed class PublicProjectCatalog(
+    IDbContextFactory<ManagementDbContext> factory,
+    IMemoryCache cache,
+    IOptions<PortalPerformanceOptions> performanceOptions)
 {
-    private static readonly IReadOnlyList<PublicProjectPreview> Projects =
-    [
-        new(
-            "ams",
-            "ams",
-            "AMS",
-            "Aquaculture Monitoring System",
-            "Hệ thống quản lý, giám sát cảm biến, thiết bị và hoạt động nuôi trồng thủy sản.",
-            "Đang phát triển",
-            "01",
-            true),
-        new(
-            "agriculture-system",
-            "agriculture-system",
-            "AGS",
-            "Agriculture System",
-            "Không gian dự án dành cho giám sát môi trường, cây trồng và tự động hóa nông nghiệp thông minh.",
-            "Định hướng",
-            "02",
-            true)
-    ];
+    private const string PublishedProjectsCacheKey = "public-project-catalog:v1";
+    private readonly SemaphoreSlim refreshGate = new(1, 1);
 
-    public IReadOnlyList<PublicProjectPreview> GetPublishedProjects() => Projects;
+    public async Task<IReadOnlyList<PublicProjectPreview>> GetPublishedProjectsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        if (cache.TryGetValue<IReadOnlyList<PublicProjectPreview>>(
+                PublishedProjectsCacheKey, out var cached) && cached is not null)
+            return cached;
 
-    public PublicProjectPreview? FindBySlug(string slug) => Projects.FirstOrDefault(
-        project => project.Slug.Equals(slug, StringComparison.OrdinalIgnoreCase));
+        // IMemoryCache does not serialize concurrent cache misses. The gate
+        // prevents a cold page burst from issuing identical PostgreSQL queries.
+        await refreshGate.WaitAsync(cancellationToken);
+        try
+        {
+            if (cache.TryGetValue<IReadOnlyList<PublicProjectPreview>>(
+                    PublishedProjectsCacheKey, out cached) && cached is not null)
+                return cached;
+
+            await using var db = await factory.CreateDbContextAsync(cancellationToken);
+            var projects = await db.Projects.AsNoTracking()
+                .Where(project => project.IsPublic)
+                .OrderBy(project => project.DisplayOrder)
+                .Select(project => new PublicProjectPreview(
+                    project.ProjectKey, project.Slug, project.ShortName, project.DisplayName,
+                    project.Description, project.LifecycleStatus, project.DisplayOrder.ToString("00"),
+                    project.IsFeatured, project.IsEnabled, project.PublicUrl))
+                .ToArrayAsync(cancellationToken);
+
+            cache.Set(PublishedProjectsCacheKey, projects,
+                TimeSpan.FromSeconds(performanceOptions.Value.PublicProjectCacheSeconds));
+            return projects;
+        }
+        finally
+        {
+            refreshGate.Release();
+        }
+    }
+
+    public async Task<PublicProjectPreview?> FindBySlugAsync(string slug,
+        CancellationToken cancellationToken = default)
+    {
+        var projects = await GetPublishedProjectsAsync(cancellationToken);
+        return projects.FirstOrDefault(project =>
+            project.Slug.Equals(slug, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>Removes only public registry metadata; no identity or child-project data is cached.</summary>
+    public void Invalidate() => cache.Remove(PublishedProjectsCacheKey);
 }

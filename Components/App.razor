@@ -12,11 +12,12 @@
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["MelrandiaManagement.styles.css"]" />
     <ImportMap />
-    <HeadOutlet />
+    <HeadOutlet @rendermode="InteractiveServer" />
 </head>
 
 <body>
-    <Routes />
+    <Routes @rendermode="InteractiveServer" />
+    <ReconnectModal />
     <div id="site-notice" class="site-notice" role="status" aria-live="polite"></div>
     <script src="@Assets["_framework/blazor.web.js"]"></script>
     <script src="@Assets["js/site.js"]"></script>

@@ -16,7 +16,15 @@ else
         <span class="page-kicker">@Project.Sequence · @Project.Status</span>
         <h1>@Project.DisplayName</h1>
         <p>@Project.Summary</p>
-        <div class="detail-note">Thông tin kỹ thuật và liên kết truy cập dự án sẽ được bổ sung khi Danh mục dự án được triển khai.</div>
+        @if (Project.IsEnabled && !string.IsNullOrWhiteSpace(Project.PublicUrl))
+        {
+            <div class="detail-note">Dự án vận hành độc lập; Melrandia chỉ lưu điểm truy cập và không đọc database nghiệp vụ của dự án.</div>
+            <a class="button button-primary" href="@Project.PublicUrl">Mở @Project.ShortName <span aria-hidden="true">→</span></a>
+        }
+        else
+        {
+            <div class="detail-note">Dự án đang ở giai đoạn @Project.Status và chưa mở điểm truy cập vận hành.</div>
+        }
         <a class="text-link" href="/du-an">Trở về danh sách dự án →</a>
     </section>
 }
@@ -27,5 +35,6 @@ else
 
     private PublicProjectPreview? Project { get; set; }
 
-    protected override void OnParametersSet() => Project = ProjectCatalog.FindBySlug(Slug);
+    protected override async Task OnParametersSetAsync() =>
+        Project = await ProjectCatalog.FindBySlugAsync(Slug);
 }

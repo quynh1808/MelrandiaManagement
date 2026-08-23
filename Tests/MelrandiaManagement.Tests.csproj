@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.4" />
     <PackageReference Include="MSTest" Version="4.0.2" />
   </ItemGroup>
 
@@ -17,7 +18,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MelrandiaManagement.csproj" />
+    <!-- Keep temporary test output overrides from leaking into the web project. This is useful
+         on restricted Windows workspaces where Tests/obj cannot be rewritten in-place. -->
+    <ProjectReference Include="..\MelrandiaManagement.csproj"
+                      GlobalPropertiesToRemove="IntermediateOutputPath;OutputPath" />
   </ItemGroup>
 
 </Project>

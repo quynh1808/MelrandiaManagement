@@ -1,0 +1,92 @@
+@page "/Management"
+@attribute [Authorize(Policy = "ManagePortal")]
+@layout ManagementLayout
+@inject PortalAdministrationService Administration
+
+<PageTitle>Tổng quan · Melrandia</PageTitle>
+
+@if (Snapshot is null)
+{
+    <div class="management-loading">Đang tải dữ liệu quản trị…</div>
+}
+else
+{
+    <section class="management-page-heading compact">
+        <div><h1>Tổng quan</h1><p>Giám sát các dự án và dịch vụ Melrandia từ một nơi duy nhất.</p></div>
+        <a class="management-primary-action" href="/Management/Projects#new-project"><span>＋</span> Thêm dự án</a>
+    </section>
+
+    <section class="management-kpi-grid" aria-label="Chỉ số tổng quan">
+        <article><span class="kpi-icon blue">▱</span><div><small>Tổng dự án</small><strong>@Snapshot.TotalProjects</strong><em>Project Registry</em></div></article>
+        <article><span class="kpi-icon green">◫</span><div><small>Hệ thống hoạt động</small><strong>@Snapshot.HealthyProjects</strong><em>Health check thành công</em></div></article>
+        <article><span class="kpi-icon orange">△</span><div><small>Thông báo đang mở</small><strong>@UnavailableCount</strong><em>Dự án không phản hồi</em></div></article>
+        <article><span class="kpi-icon violet">☑</span><div><small>Việc cần hoàn thiện</small><strong>@PendingSetupCount</strong><em>Cấu hình dự án chưa đủ</em></div></article>
+    </section>
+
+    <div class="management-overview-layout">
+        <section class="management-panel project-board">
+            <header class="panel-toolbar">
+                <div><h2>Dự án</h2><p>Trạng thái health và điểm truy cập của từng hệ thống.</p></div>
+                <div class="management-toolbar-actions">
+                    <label class="compact-select"><span class="sr-only">Lọc trạng thái</span><select data-management-status-filter><option value="all">All status</option><option value="healthy">Online</option><option value="unavailable">Offline</option><option value="unknown">Chưa kiểm tra</option></select></label>
+                    <a href="/Management/Projects">Xem tất cả →</a>
+                </div>
+            </header>
+            @if (Snapshot.Projects.Count == 0)
+            {
+                <div class="management-empty-state"><span>▱</span><h3>Chưa có dự án</h3><p>Thêm project đầu tiên để bắt đầu giám sát.</p><a href="/Management/Projects#new-project">Thêm dự án</a></div>
+            }
+            else
+            {
+                <div class="management-project-grid overview-project-grid">
+                    @foreach (var project in Snapshot.Projects)
+                    {
+                        var statusClass = HealthClass(project.HealthStatus);
+                        <article class="management-project-card" data-status="@statusClass" data-search-item="@($"{project.ShortName} {project.DisplayName} {project.ProjectKey}")">
+                            <div class="project-card-head"><span class="project-monogram @ProjectColor(project.DisplayOrder)">@project.ShortName</span><span class="health-pill @statusClass"><i></i>@HealthText(project.HealthStatus)</span></div>
+                            <h3>@project.DisplayName</h3><p>@project.Description</p>
+                            <div class="project-card-meta"><span>@project.LifecycleStatus</span><span>@project.GrantedUserCount tài khoản</span></div>
+                            <div class="project-card-footer"><small>@HealthAge(project.LastHealthCheckAtUtc)</small>@if (project.IsEnabled && !string.IsNullOrWhiteSpace(project.PublicUrl)){<a href="@project.PublicUrl">Mở dự án <b>→</b></a>}else{<span>Chưa khả dụng</span>}</div>
+                        </article>
+                    }
+                </div>
+            }
+        </section>
+
+        <aside class="management-side-column overview-side-column">
+            <section class="management-panel activity-panel">
+                <header><h2>Recent activity</h2><a href="/Management/Reports">Xem tất cả</a></header>
+                @if (Snapshot.RecentActivity.Count == 0) { <p class="management-empty">Chưa có hoạt động quản trị.</p> }
+                else { <div class="activity-list">@foreach (var item in Snapshot.RecentActivity.Take(5)){<article><span>•</span><div><strong>@ActionText(item.Action)</strong><small>@item.Actor · @item.EntityType</small></div><time>@RelativeTime(item.TimestampUtc)</time></article>}</div> }
+            </section>
+            <section class="management-panel alert-overview-panel">
+                <header><h2>Alert Overview</h2><a href="/Management/Alerts">Chi tiết</a></header>
+                <div class="alert-overview-content"><div class="status-donut" style="--status-percent:@HealthyPercent"><span><strong>@Snapshot.TotalProjects</strong><small>Hệ thống</small></span></div><div class="status-legend"><span><i class="healthy"></i>Online <b>@Snapshot.HealthyProjects</b></span><span><i class="unavailable"></i>Offline <b>@UnavailableCount</b></span><span><i class="unknown"></i>Unknown <b>@UnknownCount</b></span></div></div>
+            </section>
+            <section class="management-panel system-overview-panel">
+                <header><h2>System overview</h2><a href="/Management/Systems">Kết nối</a></header>
+                <div class="system-line"><span>Đang theo dõi</span><strong>@Snapshot.EnabledProjects / @Snapshot.TotalProjects</strong></div>
+                <div class="system-line"><span>Tài khoản</span><strong>@Snapshot.UserCount</strong></div>
+                <div class="system-line"><span>Phản hồi trung bình</span><strong>@AverageLatency</strong></div>
+            </section>
+            <div class="all-systems-state @(AllOperational ? "operational" : "attention")"><i></i><div><strong>@(AllOperational ? "All Systems Operational" : "Systems Require Attention")</strong><small>Kiểm tra health gần nhất từ Project Registry</small></div><span>◇</span></div>
+        </aside>
+    </div>
+}
+
+@code {
+    private ManagementDashboardSnapshot? Snapshot { get; set; }
+    private int UnavailableCount => Snapshot?.Projects.Count(x => x.HealthStatus == "Unavailable") ?? 0;
+    private int UnknownCount => Snapshot?.Projects.Count(x => x.HealthStatus != "Healthy" && x.HealthStatus != "Unavailable") ?? 0;
+    private int PendingSetupCount => Snapshot?.Projects.Count(x => string.IsNullOrWhiteSpace(x.PublicUrl) || string.IsNullOrWhiteSpace(x.HealthUrl) || !x.IsEnabled) ?? 0;
+    private int HealthyPercent => Snapshot is null || Snapshot.TotalProjects == 0 ? 0 : (int)Math.Round(Snapshot.HealthyProjects * 100d / Snapshot.TotalProjects);
+    private bool AllOperational => Snapshot is { TotalProjects: > 0 } && Snapshot.EnabledProjects == Snapshot.TotalProjects && Snapshot.HealthyProjects == Snapshot.TotalProjects;
+    private string AverageLatency { get { var values = Snapshot?.Projects.Where(x => x.LastResponseMilliseconds.HasValue).Select(x => x.LastResponseMilliseconds!.Value).ToArray() ?? []; return values.Length == 0 ? "Chưa có dữ liệu" : $"{Math.Round(values.Average())} ms"; } }
+    protected override async Task OnInitializedAsync() => Snapshot = await Administration.GetDashboardAsync();
+    private static string ProjectColor(int order) => (order % 4) switch { 0 => "orange", 1 => "blue", 2 => "green", _ => "violet" };
+    private static string HealthClass(string status) => status switch { "Healthy" => "healthy", "Unavailable" => "unavailable", _ => "unknown" };
+    private static string HealthText(string status) => status switch { "Healthy" => "Online", "Unavailable" => "Offline", _ => "Chưa kiểm tra" };
+    private static string HealthAge(DateTime? value) => value is null ? "Chưa kiểm tra health" : $"Kiểm tra {RelativeTime(value.Value)}";
+    private static string RelativeTime(DateTime value) { var age = DateTime.UtcNow - value; if (age.TotalMinutes < 1) return "vừa xong"; if (age.TotalHours < 1) return $"{(int)age.TotalMinutes} phút trước"; if (age.TotalDays < 1) return $"{(int)age.TotalHours} giờ trước"; return $"{(int)age.TotalDays} ngày trước"; }
+    private static string ActionText(string action) => action switch { "identity.login" => "Đăng nhập hệ thống", "identity.logout" => "Đăng xuất hệ thống", "identity.create-user" => "Tạo tài khoản", "project.create" => "Thêm dự án", "project.update" => "Cập nhật dự án", "access.grant" => "Cấp quyền dự án", "access.revoke" => "Thu hồi quyền dự án", "project.health-changed" => "Trạng thái dự án thay đổi", _ => action };
+}

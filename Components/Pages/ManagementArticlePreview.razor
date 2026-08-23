@@ -1,0 +1,20 @@
+@page "/Management/Articles/Preview/{Id:guid}"
+@attribute [Authorize(Policy = "ManagePortal")]
+@layout ManagementLayout
+@inject ArticleAdministrationService ArticlesService
+@inject ArticleMarkdownRenderer Markdown
+
+<PageTitle>Xem trước bài viết · Melrandia</PageTitle>
+@if (Article is null) { <div class="management-loading">Không tìm thấy bài viết.</div> }
+else
+{
+    <section class="management-page-heading compact"><div><h1>Xem trước bài viết</h1><p>Bản xem trước yêu cầu Administrator và không tạo URL công khai cho Draft.</p></div><a class="management-secondary-action" href="@($"/Management/Articles#article-{Article.Id}")">← Quay lại chỉnh sửa</a></section>
+    <article class="public-article-detail management-article-preview"><header><a>@Article.Status · Preview</a><h1>@Article.Title</h1><p>@Article.Summary</p><div><span>@Article.AuthorName</span><time>@(Article.PublishedAtUtc?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "Chưa xuất bản")</time></div></header>@if (Cover is not null){<img class="article-detail-cover" src="@Cover.PublicUrl" alt="@Cover.AltText" />}<section class="article-markdown">@((MarkupString)Markdown.Render(Article.ContentMarkdown))</section></article>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+    private ArticleAdminDetail? Article { get; set; }
+    private PortalArticleMedia? Cover => Article?.Media.FirstOrDefault(x => x.IsCover);
+    protected override async Task OnParametersSetAsync() => Article = await ArticlesService.FindAsync(Id);
+}

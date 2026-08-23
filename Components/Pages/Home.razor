@@ -46,7 +46,7 @@
         <a class="text-link" href="/du-an">Xem tất cả dự án <span aria-hidden="true">→</span></a>
     </div>
     <div class="project-grid">
-        @foreach (var project in ProjectCatalog.GetPublishedProjects().Where(project => project.IsFeatured))
+        @foreach (var project in Projects.Where(project => project.IsFeatured))
         {
             <ProjectPreviewCard Project="project" />
         }
@@ -96,3 +96,10 @@
         <a class="button button-outline-light" href="/lien-he">Liên hệ</a>
     </div>
 </section>
+
+@code {
+    private IReadOnlyList<PublicProjectPreview> Projects { get; set; } = [];
+
+    protected override async Task OnInitializedAsync() =>
+        Projects = await ProjectCatalog.GetPublishedProjectsAsync();
+}

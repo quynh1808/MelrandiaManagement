@@ -1,0 +1,75 @@
+name: melrandia-management
+
+services:
+  postgresql:
+    image: postgres:17-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${MM_POSTGRES_DATABASE:?set MM_POSTGRES_DATABASE in .env}
+      POSTGRES_USER: ${MM_POSTGRES_USERNAME:?set MM_POSTGRES_USERNAME in .env}
+      POSTGRES_PASSWORD: ${MM_POSTGRES_PASSWORD:?set MM_POSTGRES_PASSWORD in .env}
+    volumes:
+      - management_postgresql_data:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  data-protection-init:
+    image: alpine:3.22
+    restart: "no"
+    network_mode: none
+    command: ["sh", "-c", "chown -R 1654:1654 /keys /media && chmod 700 /keys /media"]
+    volumes:
+      - management_data_protection_keys:/keys
+      - management_article_media:/media
+
+  management:
+    image: ${MM_IMAGE:?set MM_IMAGE in .env}:${MM_VERSION:?set MM_VERSION in .env}
+    restart: unless-stopped
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      data-protection-init:
+        condition: service_completed_successfully
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_HTTP_PORTS: 8080
+      PostgreSql__Host: postgresql
+      PostgreSql__Port: 5432
+      PostgreSql__DatabaseName: ${MM_POSTGRES_DATABASE}
+      PostgreSql__Username: ${MM_POSTGRES_USERNAME}
+      PostgreSql__Password: ${MM_POSTGRES_PASSWORD}
+      PostgreSql__AutoMigrate: "true"
+      BootstrapAdmin__Username: ${MM_BOOTSTRAP_ADMIN_USERNAME:-admin}
+      BootstrapAdmin__Password: ${MM_BOOTSTRAP_ADMIN_PASSWORD:?set MM_BOOTSTRAP_ADMIN_PASSWORD in .env}
+      BootstrapAdmin__DisplayName: ${MM_BOOTSTRAP_ADMIN_DISPLAY_NAME:-Quản trị Melrandia}
+      InitialProjects__AmsPublicUrl: ${MM_AMS_PUBLIC_URL:?set MM_AMS_PUBLIC_URL in .env}
+      InitialProjects__AmsHealthUrl: ${MM_AMS_HEALTH_URL:?set MM_AMS_HEALTH_URL in .env}
+      PortalPerformance__PublicProjectCacheSeconds: ${MM_PUBLIC_PROJECT_CACHE_SECONDS:-30}
+      ArticleMedia__RootPath: /app/App_Data/media
+      ArticleMedia__MaxFileSizeMegabytes: ${MM_ARTICLE_MAX_FILE_MB:-8}
+      ArticleMedia__MaxFilesPerArticle: ${MM_ARTICLE_MAX_FILES:-8}
+      DataProtection__KeysPath: /app/data-protection-keys
+    ports:
+      - "${MM_BIND_ADDRESS:-127.0.0.1}:${MM_HTTP_PORT:-8090}:8080"
+    volumes:
+      - management_data_protection_keys:/app/data-protection-keys
+      - management_article_media:/app/App_Data/media
+    networks:
+      - backend
+      - frontend
+
+networks:
+  backend:
+    internal: true
+  frontend:
+
+volumes:
+  management_postgresql_data:
+  management_data_protection_keys:
+  management_article_media:

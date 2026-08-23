@@ -1,0 +1,26 @@
+@* Blazor assigns components-reconnect-* state classes to this exact element.
+   The counter element IDs are populated by the .NET 10 reconnection handler. *@
+<div id="components-reconnect-modal" class="server-reconnect-overlay" role="alertdialog" aria-live="assertive" aria-modal="true" aria-labelledby="server-reconnect-title">
+    <article class="server-reconnect-card">
+        <span class="server-reconnect-signal" aria-hidden="true"><i></i><i></i><i></i></span>
+        <div class="reconnect-state components-reconnect-show components-reconnect-retrying">
+            <strong id="server-reconnect-title">Rejoining the server...</strong>
+            <p>Kết nối tới MelrandiaManagement đã bị gián đoạn.</p>
+            <small>Lần thử <span id="components-reconnect-current-attempt"></span>/<span id="components-reconnect-max-retries"></span></small>
+        </div>
+        <div class="reconnect-state components-reconnect-failed">
+            <strong>Rejoin failed...</strong>
+            <p>Trying again in <span id="components-seconds-to-next-attempt"></span> second(s).</p>
+            <button type="button" onclick="window.Blazor.reconnect()">Thử kết nối ngay</button>
+        </div>
+        <div class="reconnect-state components-reconnect-rejected">
+            <strong>Server đã khởi động lại</strong>
+            <p>Phiên làm việc cũ không thể nối lại. Hãy tải lại trang để tạo phiên mới.</p>
+            <button type="button" onclick="window.location.reload()">Tải lại trang</button>
+        </div>
+        <div class="reconnect-state components-reconnect-paused">
+            <strong>Kết nối đang tạm dừng</strong>
+            <p>Melrandia sẽ tiếp tục khi trình duyệt khôi phục kết nối.</p>
+        </div>
+    </article>
+</div>

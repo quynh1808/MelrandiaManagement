@@ -8,9 +8,16 @@
     <h1>Những hệ thống đang được xây dựng.</h1>
     <p>Mỗi dự án có source code, dữ liệu và vòng đời phát hành riêng nhưng cùng được giới thiệu và truy cập từ Melrandia.</p>
     <div class="project-grid compact-project-grid">
-        @foreach (var project in ProjectCatalog.GetPublishedProjects())
+        @foreach (var project in PublishedProjects)
         {
             <ProjectPreviewCard Project="project" />
         }
     </div>
 </section>
+
+@code {
+    private IReadOnlyList<PublicProjectPreview> PublishedProjects { get; set; } = [];
+
+    protected override async Task OnInitializedAsync() =>
+        PublishedProjects = await ProjectCatalog.GetPublishedProjectsAsync();
+}

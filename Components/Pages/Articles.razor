@@ -3,19 +3,47 @@
 
 <PageTitle>Bài viết · Melrandia</PageTitle>
 
-<section class="simple-page wide-page">
+<section class="simple-page wide-page public-articles-page">
     <span class="page-kicker">Bài viết</span>
     <h1>Góc nhìn và hành trình phát triển.</h1>
-    <p>Các bài viết sẽ được tổ chức theo ba chuyên mục rõ ràng để người đọc dễ theo dõi khi thư viện nội dung được mở rộng.</p>
+    <p>Những ghi chép về kinh tế, công nghệ, sách và quá trình xây dựng các hệ thống Melrandia.</p>
     <div class="category-grid">
-        @foreach (var category in ArticleCatalog.GetCategories())
+        @foreach (var category in Categories)
         {
             <a class="category-card reveal" href="@($"/bai-viet/{category.Slug}")">
-                <span>@category.Sequence</span>
-                <h2>@category.DisplayName</h2>
-                <p>@category.Summary</p>
-                <strong>Xem chuyên mục <i aria-hidden="true">→</i></strong>
+                <span>@category.Sequence</span><h2>@category.DisplayName</h2><p>@category.Summary</p>
+                <strong>@category.PublishedCount bài viết <i aria-hidden="true">→</i></strong>
             </a>
         }
     </div>
+
+    <header class="public-section-heading"><div><span class="page-kicker">Mới xuất bản</span><h2>Bài viết gần đây</h2></div></header>
+    @if (PublishedArticles.Count == 0)
+    {
+        <div class="detail-note">Chưa có bài viết được xuất bản. Bản nháp và bài lưu trữ không xuất hiện ở trang công khai.</div>
+    }
+    else
+    {
+        <div class="public-article-grid">
+            @foreach (var article in PublishedArticles)
+            {
+                <a class="public-article-card reveal" href="@ArticleUrl(article)">
+                    @if (!string.IsNullOrWhiteSpace(article.CoverUrl)) { <img src="@article.CoverUrl" alt="@article.CoverAlt" loading="lazy" /> }
+                    else { <span class="article-cover-placeholder">@article.CategoryName</span> }
+                    <div><small>@article.CategoryName · @article.PublishedAtUtc.ToLocalTime().ToString("dd/MM/yyyy")</small><h2>@article.Title</h2><p>@article.Summary</p><strong>Đọc bài viết →</strong></div>
+                </a>
+            }
+        </div>
+    }
 </section>
+
+@code {
+    private IReadOnlyList<PublicArticleCategory> Categories { get; set; } = [];
+    private IReadOnlyList<PublicArticleSummary> PublishedArticles { get; set; } = [];
+    protected override async Task OnInitializedAsync()
+    {
+        Categories = await ArticleCatalog.GetCategoriesAsync();
+        PublishedArticles = await ArticleCatalog.GetPublishedArticlesAsync(take: 9);
+    }
+    private static string ArticleUrl(PublicArticleSummary article) => $"/bai-viet/{article.CategorySlug}/{article.Slug}";
+}

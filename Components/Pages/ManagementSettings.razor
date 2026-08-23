@@ -1,0 +1,26 @@
+@page "/Management/Settings"
+@attribute [Authorize(Policy = "ManagePortal")]
+@layout ManagementLayout
+
+<PageTitle>Thiết lập · Melrandia</PageTitle>
+
+<section class="management-page-heading compact"><div><h1>Thiết lập</h1><p>Cấu hình portal, bảo mật, giao diện và ranh giới vận hành.</p></div></section>
+
+<div class="settings-workspace">
+    <nav class="management-panel settings-section-nav" aria-label="Nhóm thiết lập">
+        <a class="active" href="#general">⚙ <span>Thiết lập chung</span></a>
+        <a href="#appearance">◐ <span>Giao diện</span></a>
+        <a href="#security">◇ <span>Bảo mật</span></a>
+        <a href="/Management/Systems">⌗ <span>Connections</span></a>
+        <a href="/Management/Integrations">⌘ <span>Tích hợp</span></a>
+    </nav>
+    <div class="settings-content">
+        <section id="general" class="management-panel settings-detail-card"><header><div><h2>Thiết lập chung</h2><p>Thông tin nhận diện và vùng vận hành của portal.</p></div></header><div class="settings-read-grid"><div><small>Tên hệ thống</small><strong>Melrandia Management</strong></div><div><small>Ngôn ngữ</small><strong>Tiếng Việt</strong></div><div><small>Timezone hiển thị</small><strong>Local browser time</strong></div><div><small>Database</small><strong>PostgreSQL riêng</strong></div></div></section>
+        <section id="appearance" class="management-panel settings-detail-card"><header><div><h2>Giao diện &amp; trải nghiệm</h2><p>Theme được lưu trong trình duyệt của từng người dùng.</p></div></header><div class="theme-choice-row"><article class="active"><span class="theme-preview light"></span><strong>Sáng</strong></article><article><span class="theme-preview dark"></span><strong>Tối</strong></article><div><small>Font hệ thống</small><strong>Times New Roman</strong><p>Dùng chung với website công khai.</p></div></div></section>
+        <div class="settings-security-grid">
+            <section id="security" class="management-panel setting-card"><span>01</span><h2>Identity &amp; session</h2><p>Cookie HTTP-only, antiforgery, lockout và policy Administrator được kiểm tra tại server.</p><a href="/Management/Users">Quản lý tài khoản →</a></section>
+            <section class="management-panel setting-card"><span>02</span><h2>Secrets</h2><p>PostgreSQL password, bootstrap password và recovery password chỉ đến từ User Secrets hoặc environment.</p><strong>Không hiển thị trên UI</strong></section>
+            <section class="management-panel setting-card"><span>03</span><h2>Single Sign-On</h2><p>Identity hiện tại là nền tảng cho OpenID Connect Provider ở giai đoạn tích hợp AMS.</p><span class="table-status disabled">Chưa kích hoạt</span></section>
+        </div>
+    </div>
+</div>

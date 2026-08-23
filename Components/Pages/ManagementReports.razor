@@ -1,0 +1,40 @@
+@page "/Management/Reports"
+@attribute [Authorize(Policy = "ManagePortal")]
+@layout ManagementLayout
+@inject PortalAdministrationService Administration
+
+<PageTitle>Báo cáo · Melrandia</PageTitle>
+
+<section class="management-page-heading compact"><div><h1>Báo cáo</h1><p>Tổng hợp tình trạng project, health và hoạt động quản trị từ dữ liệu hiện có.</p></div><span class="management-readonly-badge">Live summary</span></section>
+
+@if (Snapshot is null) { <div class="management-loading">Đang tổng hợp báo cáo…</div> }
+else
+{
+    <section class="management-kpi-grid">
+        <article><span class="kpi-icon blue">▤</span><div><small>Project records</small><strong>@Snapshot.TotalProjects</strong><em>Trong registry</em></div></article>
+        <article><span class="kpi-icon green">✓</span><div><small>Healthy</small><strong>@Snapshot.HealthyProjects</strong><em>@HealthyPercent% tổng số</em></div></article>
+        <article><span class="kpi-icon orange">△</span><div><small>Cần chú ý</small><strong>@AttentionCount</strong><em>Offline hoặc unknown</em></div></article>
+        <article><span class="kpi-icon violet">♙</span><div><small>Tài khoản</small><strong>@Snapshot.UserCount</strong><em>Central Identity</em></div></article>
+    </section>
+
+    <div class="report-grid">
+        <section class="management-panel report-chart-card"><header><div><h2>Project performance</h2><p>Phân bố theo health status.</p></div></header><div class="report-chart-body"><div class="status-donut report" style="--status-percent:@HealthyPercent"><span><strong>@Snapshot.TotalProjects</strong><small>Tổng dự án</small></span></div><div class="status-legend"><span><i class="healthy"></i>Healthy <b>@Snapshot.HealthyProjects</b></span><span><i class="unavailable"></i>Unavailable <b>@UnavailableCount</b></span><span><i class="unknown"></i>Unknown <b>@UnknownCount</b></span></div></div></section>
+        <section class="management-panel report-chart-card"><header><div><h2>Connection response</h2><p>Độ trễ health gần nhất.</p></div></header><div class="metric-bars">@foreach (var p in Snapshot.Projects){<div><span>@p.ShortName</span><b><i style="width:@LatencyWidth(p.LastResponseMilliseconds)%"></i></b><strong>@(p.LastResponseMilliseconds is null ? "—" : $"{p.LastResponseMilliseconds} ms")</strong></div>}</div></section>
+        <section class="management-panel report-chart-card"><header><div><h2>Configuration coverage</h2><p>Mức hoàn thiện registry.</p></div></header><div class="metric-bars">@foreach (var p in Snapshot.Projects){var score = ConfigurationScore(p);<div><span>@p.ShortName</span><b><i class="green" style="width:@score%"></i></b><strong>@score%</strong></div>}</div></section>
+    </div>
+
+    <section class="management-panel table-panel report-activity-table"><header><div><h2>Audit summary</h2><p>Hoạt động mới nhất được lưu trong PostgreSQL.</p></div></header><div class="management-table-wrap"><table class="management-table"><thead><tr><th>Thời gian</th><th>Actor</th><th>Hành động</th><th>Đối tượng</th><th>Kết quả</th></tr></thead><tbody>@foreach (var item in Snapshot.RecentActivity){<tr><td>@item.TimestampUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td><td>@item.Actor</td><td>@ActionText(item.Action)</td><td>@item.EntityType</td><td><span class="table-status enabled">@item.Result</span></td></tr>}</tbody></table></div></section>
+    <section class="management-info-banner"><span>ⓘ</span><div><strong>Xuất file và lịch báo cáo</strong><p>Backend tạo PDF/Excel và scheduler chưa được triển khai. Trang này hiện chỉ trình bày số liệu thật theo thời điểm truy cập để tránh tạo báo cáo không có nguồn dữ liệu.</p></div></section>
+}
+
+@code {
+    private ManagementDashboardSnapshot? Snapshot { get; set; }
+    private int UnavailableCount => Snapshot?.Projects.Count(x => x.HealthStatus == "Unavailable") ?? 0;
+    private int UnknownCount => Snapshot?.Projects.Count(x => x.HealthStatus != "Healthy" && x.HealthStatus != "Unavailable") ?? 0;
+    private int AttentionCount => UnavailableCount + UnknownCount;
+    private int HealthyPercent => Snapshot is null || Snapshot.TotalProjects == 0 ? 0 : (int)Math.Round(Snapshot.HealthyProjects * 100d / Snapshot.TotalProjects);
+    protected override async Task OnInitializedAsync() => Snapshot = await Administration.GetDashboardAsync();
+    private static int ConfigurationScore(ManagementProjectCard p) => new[] { !string.IsNullOrWhiteSpace(p.PublicUrl), !string.IsNullOrWhiteSpace(p.HealthUrl), p.IsEnabled, p.GrantedUserCount > 0 }.Count(x => x) * 25;
+    private static int LatencyWidth(long? value) => value is null ? 0 : (int)Math.Clamp(value.Value / 5, 4, 100);
+    private static string ActionText(string action) => action switch { "identity.login" => "Đăng nhập", "identity.logout" => "Đăng xuất", "identity.create-user" => "Tạo tài khoản", "project.create" => "Thêm dự án", "project.update" => "Cập nhật dự án", "access.grant" => "Cấp quyền", "access.revoke" => "Thu hồi quyền", "project.health-changed" => "Health thay đổi", _ => action };
+}

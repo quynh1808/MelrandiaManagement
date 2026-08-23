@@ -1,0 +1,45 @@
+@page "/Management/Systems"
+@attribute [Authorize(Policy = "ManagePortal")]
+@layout ManagementLayout
+@inject PortalAdministrationService Administration
+
+<PageTitle>Network & Connections · Melrandia</PageTitle>
+
+<section class="management-page-heading compact">
+    <div><h1>Network &amp; Connections</h1><p>Kiểm kê endpoint công khai và health connection của mọi project đã đăng ký.</p></div>
+    <a class="management-primary-action" href="/Management/Projects#new-project">＋ Thêm kết nối</a>
+</section>
+
+<section class="management-kpi-grid five">
+    <article><span class="kpi-icon blue">⌗</span><div><small>Tổng hệ thống</small><strong>@Projects.Count</strong><em>Project Registry</em></div></article>
+    <article><span class="kpi-icon green">●</span><div><small>Online</small><strong>@Count("Healthy")</strong><em>Endpoint phản hồi</em></div></article>
+    <article><span class="kpi-icon violet">⚒</span><div><small>Maintenance</small><strong>@Projects.Count(x => x.LifecycleStatus == "Maintenance")</strong><em>Trạng thái vòng đời</em></div></article>
+    <article><span class="kpi-icon red">○</span><div><small>Offline</small><strong>@Count("Unavailable")</strong><em>Cần kiểm tra</em></div></article>
+    <article><span class="kpi-icon cyan">◴</span><div><small>Độ trễ TB</small><strong class="metric-text">@AverageLatency</strong><em>Health request</em></div></article>
+</section>
+
+<section class="management-panel data-workspace">
+    <header class="panel-toolbar"><div><h2>Danh sách connections</h2><p>MM chỉ kết nối qua HTTP; không truy cập database nghiệp vụ của project con.</p></div><label class="compact-select"><select data-management-status-filter aria-label="Lọc trạng thái"><option value="all">All status</option><option value="healthy">Online</option><option value="unavailable">Offline</option><option value="unknown">Unknown</option></select></label></header>
+    <div class="management-table-wrap"><table class="management-table systems-table"><thead><tr><th>System</th><th>Loại</th><th>Network</th><th>Trạng thái</th><th>Health endpoint</th><th>Response</th><th>Cập nhật</th><th></th></tr></thead><tbody>
+        @foreach (var project in Projects)
+        {
+            <tr data-status="@HealthClass(project.HealthStatus)" data-search-item="@($"{project.DisplayName} {project.ProjectKey} {project.PublicUrl} {project.HealthUrl}")">
+                <td><span class="table-identity"><span class="project-monogram mini @ProjectColor(project.DisplayOrder)">@project.ShortName</span><span><strong>@project.DisplayName</strong><small>@project.ProjectKey</small></span></span></td>
+                <td>Application</td><td><span class="network-address">@DisplayHost(project.PublicUrl)</span></td><td><span class="health-pill @HealthClass(project.HealthStatus)"><i></i>@project.HealthStatus</span></td><td><span class="endpoint-text">@Empty(project.HealthUrl)</span></td><td>@(project.LastResponseMilliseconds is null ? "—" : $"{project.LastResponseMilliseconds} ms")</td><td>@FormatDate(project.LastHealthCheckAtUtc)</td><td><a class="table-action" href="/Management/Projects#project-@project.Id">Sửa</a></td>
+            </tr>
+        }
+    </tbody></table></div>
+    @if (Projects.Count == 0) { <div class="management-empty-state compact"><span>⌗</span><h3>Chưa có connection</h3><p>Endpoint được tạo khi Administrator thêm project.</p></div> }
+</section>
+
+@code {
+    private IReadOnlyList<ManagementProjectCard> Projects { get; set; } = [];
+    protected override async Task OnInitializedAsync() => Projects = await Administration.GetProjectsAsync();
+    private int Count(string status) => Projects.Count(x => x.HealthStatus == status);
+    private string AverageLatency { get { var values = Projects.Where(x => x.LastResponseMilliseconds.HasValue).Select(x => x.LastResponseMilliseconds!.Value).ToArray(); return values.Length == 0 ? "—" : $"{Math.Round(values.Average())} ms"; } }
+    private static string Empty(string value) => string.IsNullOrWhiteSpace(value) ? "Chưa cấu hình" : value;
+    private static string DisplayHost(string value) => Uri.TryCreate(value, UriKind.Absolute, out var uri) ? $"{uri.Host}:{uri.Port}" : "Chưa cấu hình";
+    private static string FormatDate(DateTime? value) => value?.ToLocalTime().ToString("dd/MM HH:mm") ?? "Chưa kiểm tra";
+    private static string HealthClass(string status) => status switch { "Healthy" => "healthy", "Unavailable" => "unavailable", _ => "unknown" };
+    private static string ProjectColor(int order) => (order % 4) switch { 0 => "orange", 1 => "blue", 2 => "green", _ => "violet" };
+}

@@ -1,17 +1,82 @@
 @page "/login"
+@attribute [AllowAnonymous]
+@layout AuthLayout
 
 <PageTitle>Đăng nhập · Melrandia</PageTitle>
 
-<section class="simple-page login-preview-page">
-    <div>
-        <span class="page-kicker">Khu vực quản trị</span>
-        <h1>Đăng nhập Melrandia.</h1>
-        <p>Chức năng xác thực và Bảng điều khiển quản trị sẽ được triển khai sau khi giao diện công khai được nghiệm thu.</p>
-    </div>
-    <div class="login-preview-card" aria-label="Bản xem trước biểu mẫu đăng nhập">
-        <label>Tài khoản<input type="text" disabled placeholder="Chưa khả dụng" /></label>
-        <label>Mật khẩu<input type="password" disabled placeholder="••••••••••••" /></label>
-        <button class="button button-primary" type="button" disabled>Đăng nhập</button>
-        <small>Chức năng đang được chuẩn bị.</small>
-    </div>
+<section class="auth-page auth-page-split">
+    <aside class="auth-showcase">
+        <a class="auth-wordmark" href="/">
+            <img src="/images/avatar.png" alt="" width="62" height="62" />
+            <span><strong>Melrandia</strong><small>Internet of Things</small></span>
+        </a>
+        <div class="auth-showcase-copy">
+            <span class="page-kicker">Management Portal</span>
+            <h1>Một tài khoản.<br /><em>Nhiều hệ thống.</em></h1>
+            <p>Đăng nhập để quản lý dự án, tài khoản, quyền truy cập và theo dõi trạng thái các hệ thống Melrandia.</p>
+        </div>
+        <div class="auth-feature-list">
+            <article><b>01</b><span><strong>Danh tính tập trung</strong><small>Cookie bảo mật, lockout và phân quyền phía server.</small></span></article>
+            <article><b>02</b><span><strong>Project Registry</strong><small>URL, health và vòng đời từng hệ thống trong PostgreSQL.</small></span></article>
+            <article><b>03</b><span><strong>Ranh giới độc lập</strong><small>MM không đọc database cảm biến hoặc điều khiển trực tiếp AMS.</small></span></article>
+        </div>
+    </aside>
+
+    <main class="auth-form-area">
+        <article class="auth-card">
+            <a class="auth-back-link" href="/">← Quay lại trang chủ</a>
+            <span class="page-kicker">Secure Administration Access</span>
+            <h2>Đăng nhập Melrandia</h2>
+            <p>Sử dụng tài khoản do Administrator cấp. Sau khi xác thực thành công, hệ thống chuyển tới `/Management`.</p>
+
+            @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+            {
+                <div class="form-notice error" role="alert">@ErrorMessage</div>
+            }
+
+            <form class="portal-form auth-form-fields" method="post" action="/auth/login">
+                <AntiforgeryToken />
+                <input type="hidden" name="returnUrl" value="@SafeReturnUrl" />
+                <label>
+                    <span>Tên đăng nhập</span>
+                    <input name="username" autocomplete="username" placeholder="Nhập tên đăng nhập" required autofocus />
+                </label>
+                <label>
+                    <span>Mật khẩu</span>
+                    <span class="password-field">
+                        <input id="portal-login-password" type="password" name="password" autocomplete="current-password" placeholder="Nhập mật khẩu" required />
+                        <button type="button" data-password-toggle="portal-login-password" aria-label="Hiện mật khẩu" aria-pressed="false">👁</button>
+                    </span>
+                </label>
+                <button class="button button-primary auth-submit" type="submit">Đăng nhập hệ thống <span>→</span></button>
+            </form>
+
+            <div class="auth-security-note">
+                <strong>Lưu ý bảo mật</strong>
+                <span>Password bootstrap chỉ dùng khi database chưa có Administrator và không được commit vào Git.</span>
+            </div>
+        </article>
+    </main>
 </section>
+
+@code {
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string? RequestedReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery(Name = "error")]
+    public string? ErrorCode { get; set; }
+
+    private string SafeReturnUrl =>
+        string.IsNullOrWhiteSpace(RequestedReturnUrl) || !RequestedReturnUrl.StartsWith('/') ||
+        RequestedReturnUrl.StartsWith("//", StringComparison.Ordinal) ||
+        RequestedReturnUrl.StartsWith("/\\", StringComparison.Ordinal)
+            ? "/Management"
+            : RequestedReturnUrl;
+
+    private string ErrorMessage => ErrorCode switch
+    {
+        "locked" => "Tài khoản tạm khóa do đăng nhập sai quá số lần cho phép.",
+        "invalid" => "Tên đăng nhập hoặc mật khẩu không đúng.",
+        _ => string.Empty
+    };
+}

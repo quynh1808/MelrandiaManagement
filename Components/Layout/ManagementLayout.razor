@@ -1,0 +1,81 @@
+@inherits LayoutComponentBase
+
+<div class="management-shell">
+    <aside class="management-sidebar">
+        <a class="management-brand" href="/Management">
+            <img src="/images/avatar.png" alt="" width="44" height="44" />
+            <span><strong>Melrandia</strong><small>Management Portal</small></span>
+        </a>
+
+        <nav class="management-nav" aria-label="Điều hướng quản trị">
+            <span class="management-nav-label">Trung tâm quản lý</span>
+            <NavLink href="/Management" Match="NavLinkMatch.All"><i>⌂</i><span>Tổng quan</span></NavLink>
+            <NavLink href="/Management/Projects"><i>▱</i><span>Dự án</span></NavLink>
+            <NavLink href="/Management/Systems"><i>⌗</i><span>Network &amp; Connections</span></NavLink>
+            <NavLink href="/Management/Tasks"><i>☑</i><span>Nhiệm vụ</span></NavLink>
+            <NavLink href="/Management/Alerts"><i>♢</i><span>Thông báo</span></NavLink>
+            <NavLink href="/Management/Reports"><i>▤</i><span>Báo cáo</span></NavLink>
+            <NavLink href="/Management/Integrations"><i>⌘</i><span>Tích hợp</span></NavLink>
+            <span class="management-nav-label management-nav-group">Nội dung</span>
+            <NavLink href="/Management/Articles"><i>✎</i><span>Bài viết</span></NavLink>
+            <span class="management-nav-label management-nav-group">Quản trị</span>
+            <NavLink href="/Management/Users"><i>♙</i><span>Tài khoản</span></NavLink>
+            <NavLink href="/Management/Access"><i>♧</i><span>Quyền dự án</span></NavLink>
+            <NavLink href="/Management/Settings"><i>⚙</i><span>Thiết lập</span></NavLink>
+        </nav>
+
+        <div class="management-sidebar-note">
+            <span>Database riêng</span>
+            <strong>PostgreSQL</strong>
+            <small>MM không đọc dữ liệu nghiệp vụ AMS.</small>
+        </div>
+        <a class="management-public-link" href="/">← Trang web công khai</a>
+    </aside>
+
+    <div class="management-workspace">
+        <header class="management-topbar">
+            <label class="management-search">
+                <span aria-hidden="true">⌕</span>
+                <input type="search" placeholder="Tìm dự án trên trang hiện tại…" data-management-search />
+            </label>
+            <div class="management-top-actions">
+                <button class="theme-toggle management-theme-toggle" type="button" data-theme-toggle aria-label="Chuyển giao diện">
+                    <span class="theme-icon" aria-hidden="true"><i class="sun-symbol">☀</i><i class="moon-symbol">☾</i></span>
+                </button>
+                <AuthorizeView>
+                    <Authorized Context="auth">
+                        <details class="management-account-menu">
+                            <summary aria-label="Mở menu tài khoản">
+                                <span class="management-user-avatar">@Initials(auth.User.Identity?.Name)</span>
+                                <span class="management-account-copy"><strong>@auth.User.Identity?.Name</strong><small>Administrator</small></span>
+                                <i aria-hidden="true">⌄</i>
+                            </summary>
+                            <div class="management-account-dropdown">
+                                <div><strong>@auth.User.Identity?.Name</strong><small>Quản trị viên Melrandia</small></div>
+                                <a href="/Management/Users">Quản lý tài khoản</a>
+                                <a href="/Management/Settings">Thiết lập hệ thống</a>
+                                <a href="/">Trang web công khai</a>
+                                <form method="post" action="/auth/logout" onsubmit="return confirm('Bạn có chắc chắn muốn đăng xuất?');">
+                                    <AntiforgeryToken />
+                                    <button type="submit">Đăng xuất</button>
+                                </form>
+                            </div>
+                        </details>
+                    </Authorized>
+                </AuthorizeView>
+            </div>
+        </header>
+
+        <main class="management-main">
+            @Body
+        </main>
+    </div>
+</div>
+
+@code {
+    private static string Initials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "AD";
+        return name.Trim()[..Math.Min(2, name.Trim().Length)].ToUpperInvariant();
+    }
+}

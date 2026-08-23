@@ -1,0 +1,53 @@
+@page "/Management/Users"
+@attribute [Authorize(Policy = "ManagePortal")]
+@layout ManagementLayout
+@inject PortalAdministrationService Administration
+
+<PageTitle>Tài khoản · Melrandia</PageTitle>
+
+<section class="management-page-heading compact">
+    <div><h1>Tài khoản</h1><p>Quản lý người dùng, role và trạng thái đăng nhập trong Melrandia.</p></div>
+    <a class="management-primary-action" href="#new-user">＋ Thêm tài khoản</a>
+</section>
+@if (!string.IsNullOrWhiteSpace(Status)) { <div class="form-notice success">Đã tạo tài khoản.</div> }
+@if (!string.IsNullOrWhiteSpace(Error)) { <div class="form-notice error">@Error</div> }
+
+<section class="management-kpi-grid">
+    <article><span class="kpi-icon blue">♙</span><div><small>Tổng tài khoản</small><strong>@Users.Count</strong><em>Central Identity</em></div></article>
+    <article><span class="kpi-icon green">●</span><div><small>Active users</small><strong>@Users.Count(x => x.IsEnabled)</strong><em>Được phép đăng nhập</em></div></article>
+    <article><span class="kpi-icon violet">◇</span><div><small>Administrators</small><strong>@Users.Count(x => x.IsAdministrator)</strong><em>Toàn quyền portal</em></div></article>
+    <article><span class="kpi-icon orange">◴</span><div><small>Chưa đăng nhập</small><strong>@Users.Count(x => x.LastLoginAtUtc is null)</strong><em>Tài khoản mới</em></div></article>
+</section>
+
+<div class="management-two-column users-layout">
+    <section id="new-user" class="management-panel management-form-panel">
+        <header><div><h2>Thêm tài khoản</h2><p>Sau khi tạo, cấp project cụ thể tại trang Quyền dự án.</p></div></header>
+        <form class="portal-form" method="post" action="/management/users/create" onsubmit="return confirm('Bạn có chắc chắn muốn tạo tài khoản này?');">
+            <AntiforgeryToken />
+            <label><span>Tên đăng nhập</span><input name="username" minlength="3" maxlength="64" autocomplete="off" required /></label>
+            <label><span>Tên hiển thị</span><input name="displayName" maxlength="120" required /></label>
+            <label><span>Mật khẩu ban đầu</span><span class="password-field"><input id="new-user-password" name="password" type="password" minlength="12" autocomplete="new-password" required /><button type="button" data-password-toggle="new-user-password" aria-label="Hiện mật khẩu">👁</button></span></label>
+            <small class="field-help">Tối thiểu 12 ký tự, có chữ hoa, chữ thường, số và ký tự đặc biệt.</small>
+            <label class="single-checkbox"><input type="checkbox" name="administrator" /> Cấp role Administrator toàn portal</label>
+            <button class="management-primary-action" type="submit">＋ Tạo tài khoản</button>
+        </form>
+    </section>
+    <section class="management-panel table-panel">
+        <header class="panel-toolbar"><div><h2>Danh sách tài khoản</h2><p>@Users.Count tài khoản trong MM.</p></div><label class="compact-select"><select data-management-status-filter aria-label="Lọc tài khoản"><option value="all">All status</option><option value="enabled">Enabled</option><option value="disabled">Disabled</option></select></label></header>
+        <div class="management-table-wrap"><table class="management-table"><thead><tr><th>Tài khoản</th><th>Role</th><th>Trạng thái</th><th>Đăng nhập cuối</th></tr></thead><tbody>
+        @foreach (var user in Users)
+        {
+            <tr data-status="@(user.IsEnabled ? "enabled" : "disabled")" data-search-item="@($"{user.DisplayName} {user.Username}")"><td><span class="table-identity"><span class="management-user-avatar mini">@Initials(user.DisplayName)</span><span><strong>@user.DisplayName</strong><small>@($"@{user.Username}")</small></span></span></td><td>@(user.IsAdministrator ? "Administrator" : "Member")</td><td><span class="table-status @(user.IsEnabled ? "enabled" : "disabled")">@(user.IsEnabled ? "Enabled" : "Disabled")</span></td><td>@FormatDate(user.LastLoginAtUtc)</td></tr>
+        }
+        </tbody></table></div>
+    </section>
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "status")] public string? Status { get; set; }
+    [SupplyParameterFromQuery(Name = "error")] public string? Error { get; set; }
+    private IReadOnlyList<PortalUserSummary> Users { get; set; } = [];
+    protected override async Task OnInitializedAsync() => Users = await Administration.GetUsersAsync();
+    private static string FormatDate(DateTime? value) => value?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "Chưa đăng nhập";
+    private static string Initials(string value) => string.IsNullOrWhiteSpace(value) ? "US" : value.Trim()[..Math.Min(2, value.Trim().Length)].ToUpperInvariant();
+}

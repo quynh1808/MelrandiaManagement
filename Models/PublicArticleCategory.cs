@@ -8,4 +8,5 @@ public sealed record PublicArticleCategory(
     string Slug,
     string DisplayName,
     string Summary,
-    string Sequence);
+    string Sequence,
+    int PublishedCount = 0);

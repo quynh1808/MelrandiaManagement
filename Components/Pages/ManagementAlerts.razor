@@ -1,0 +1,39 @@
+@page "/Management/Alerts"
+@attribute [Authorize(Policy = "ManagePortal")]
+@layout ManagementLayout
+@inject PortalAdministrationService Administration
+
+<PageTitle>Thông báo · Melrandia</PageTitle>
+
+<section class="management-page-heading compact"><div><h1>Thông báo</h1><p>Theo dõi lỗi health và cấu hình cần chú ý trên toàn bộ project.</p></div><a class="management-secondary-action" href="/Management/Systems">Kiểm tra connections</a></section>
+
+<section class="management-kpi-grid">
+    <article><span class="kpi-icon red">△</span><div><small>Critical</small><strong>@Critical.Count</strong><em>Health unavailable</em></div></article>
+    <article><span class="kpi-icon orange">!</span><div><small>Warning</small><strong>@Warnings.Count</strong><em>Chưa đủ cấu hình</em></div></article>
+    <article><span class="kpi-icon green">✓</span><div><small>Healthy</small><strong>@Projects.Count(x => x.HealthStatus == "Healthy")</strong><em>Đang phản hồi</em></div></article>
+    <article><span class="kpi-icon blue">◴</span><div><small>Đã kiểm tra</small><strong>@Projects.Count(x => x.LastHealthCheckAtUtc.HasValue)</strong><em>Ít nhất một lần</em></div></article>
+</section>
+
+<div class="management-content-aside">
+    <section class="management-panel table-panel"><header class="panel-toolbar"><div><h2>Thông báo hiện tại</h2><p>Danh sách chỉ phản ánh trạng thái thật; không tạo incident giả.</p></div><label class="compact-select"><select data-management-status-filter aria-label="Lọc mức độ"><option value="all">Tất cả mức độ</option><option value="critical">Critical</option><option value="warning">Warning</option></select></label></header>
+        <div class="management-table-wrap"><table class="management-table alert-table"><thead><tr><th>Thông báo</th><th>Mức độ</th><th>Nguồn</th><th>Phát hiện</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+            @foreach (var alert in Alerts)
+            {
+                <tr data-status="@alert.Severity.ToLowerInvariant()" data-search-item="@($"{alert.Title} {alert.Project.DisplayName}")"><td><span class="alert-title"><i class="@alert.Severity.ToLowerInvariant()">!</i><span><strong>@alert.Title</strong><small>@alert.Detail</small></span></span></td><td><span class="severity-pill @alert.Severity.ToLowerInvariant()">@alert.Severity</span></td><td>@alert.Project.DisplayName</td><td>@FormatDate(alert.Project.LastHealthCheckAtUtc)</td><td>@alert.State</td><td><a class="table-action" href="/Management/Projects">Xử lý</a></td></tr>
+            }
+        </tbody></table></div>
+        @if (Alerts.Count == 0) { <div class="management-empty-state compact"><span>✓</span><h3>Không có thông báo đang mở</h3><p>Tất cả project đã cấu hình đều phản hồi bình thường.</p></div> }
+    </section>
+    <aside class="management-side-column"><section class="management-panel alert-overview-panel"><header><h2>Severity distribution</h2></header><div class="alert-overview-content"><div class="status-donut alerts"><span><strong>@Alerts.Count</strong><small>Total alerts</small></span></div><div class="status-legend"><span><i class="unavailable"></i>Critical <b>@Critical.Count</b></span><span><i class="warning"></i>Warning <b>@Warnings.Count</b></span></div></div></section><section class="management-panel resolution-panel"><header><h2>Resolution workflow</h2></header><ol><li><i>1</i><span><strong>Xác nhận</strong><small>Đối chiếu network và endpoint.</small></span></li><li><i>2</i><span><strong>Điều tra</strong><small>Xem lỗi health gần nhất.</small></span></li><li><i>3</i><span><strong>Khắc phục</strong><small>Sửa tại project đích.</small></span></li><li><i>4</i><span><strong>Xác minh</strong><small>Chờ health check thành công.</small></span></li></ol></section></aside>
+</div>
+
+@code {
+    private IReadOnlyList<ManagementProjectCard> Projects { get; set; } = [];
+    private List<PortalAlert> Alerts { get; set; } = [];
+    private List<PortalAlert> Critical => Alerts.Where(x => x.Severity == "Critical").ToList();
+    private List<PortalAlert> Warnings => Alerts.Where(x => x.Severity == "Warning").ToList();
+    protected override async Task OnInitializedAsync() { Projects = await Administration.GetProjectsAsync(); Alerts = BuildAlerts(Projects); }
+    private static List<PortalAlert> BuildAlerts(IEnumerable<ManagementProjectCard> projects) { var result = new List<PortalAlert>(); foreach (var p in projects) { if (p.HealthStatus == "Unavailable") result.Add(new("Health endpoint không phản hồi", "Không thể xác nhận readiness của project.", "Critical", "Open", p)); if (string.IsNullOrWhiteSpace(p.HealthUrl) || !p.IsEnabled) result.Add(new("Health monitoring chưa hoàn chỉnh", "Hãy cấu hình endpoint và bật theo dõi health.", "Warning", "Configuration", p)); } return result; }
+    private static string FormatDate(DateTime? value) => value?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "Chưa kiểm tra";
+    private sealed record PortalAlert(string Title, string Detail, string Severity, string State, ManagementProjectCard Project);
+}

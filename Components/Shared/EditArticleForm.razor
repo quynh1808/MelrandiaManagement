@@ -1,0 +1,23 @@
+@inject ArticleAdministrationService ArticlesService
+
+@if (Article is null) { <div class="management-loading compact">Đang tải bài viết…</div> }
+else
+{
+    <form class="portal-form article-edit-form" method="post" action="/management/articles/save" enctype="multipart/form-data" onsubmit="return confirm('Bạn có chắc chắn muốn cập nhật bài viết này?');">
+        <AntiforgeryToken /><input type="hidden" name="id" value="@Article.Id" /><input type="hidden" name="version" value="@Article.Version" />
+        <div class="form-grid two"><label><span>Tiêu đề</span><input name="title" value="@Article.Title" minlength="5" maxlength="240" required /></label><label><span>Slug</span><input name="slug" value="@Article.Slug" pattern="[a-z0-9-]+" maxlength="160" required /></label><label><span>Chuyên mục</span><select name="categoryId">@foreach (var category in Categories){<option value="@category.Id" selected="@(category.Id == Article.CategoryId)">@category.DisplayName</option>}</select></label><label><span>Trạng thái</span><select name="status">@foreach (var status in PortalArticleStatuses.All){<option value="@status" selected="@(status == Article.Status)">@status</option>}</select></label></div>
+        <label><span>Mô tả ngắn</span><textarea name="summary" rows="3" minlength="20" maxlength="700" required>@Article.Summary</textarea></label>
+        <label><span>Nội dung Markdown</span><textarea class="markdown-editor" name="contentMarkdown" rows="14" minlength="50" maxlength="200000" required>@Article.ContentMarkdown</textarea></label>
+        <div class="form-grid two"><label><span>Xuất bản/Hẹn giờ UTC</span><input name="publishedAtUtc" type="datetime-local" value="@DateValue(Article.PublishedAtUtc)" /></label><label><span>Ảnh đại diện mới</span><input name="cover" type="file" accept="image/jpeg,image/png,image/gif,image/webp" /></label><label><span>Alt text ảnh đại diện mới</span><input name="coverAlt" maxlength="300" /></label><label><span>Thêm ảnh gallery</span><input name="gallery" type="file" accept="image/jpeg,image/png,image/gif,image/webp" multiple /></label></div>
+        @if (Article.Media.Count > 0) { <div class="article-edit-media">@foreach (var media in Article.Media){<figure class="@(media.IsCover ? "cover" : "")"><img src="@media.PublicUrl" alt="@media.AltText" loading="lazy" /><figcaption>@(media.IsCover ? "Cover" : media.AltText)</figcaption></figure>}</div> }
+        <div class="article-edit-actions"><a class="management-secondary-action" href="@($"/Management/Articles/Preview/{Article.Id}")">Xem trước</a><button class="management-primary-action" type="submit">Lưu thay đổi</button></div>
+    </form>
+}
+
+@code {
+    [Parameter] public Guid ArticleId { get; set; }
+    [Parameter] public IReadOnlyList<PortalArticleCategory> Categories { get; set; } = [];
+    private ArticleAdminDetail? Article { get; set; }
+    protected override async Task OnInitializedAsync() => Article = await ArticlesService.FindAsync(ArticleId);
+    private static string? DateValue(DateTime? value) => value?.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm");
+}

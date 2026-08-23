@@ -1,0 +1,52 @@
+@page "/Management/Access"
+@attribute [Authorize(Policy = "ManagePortal")]
+@layout ManagementLayout
+@inject PortalAdministrationService Administration
+
+<PageTitle>Quyền dự án · Melrandia</PageTitle>
+
+<section class="management-page-heading compact">
+    <div><span class="management-kicker">User–Project Access</span><h1>Quyền truy cập dự án</h1><p>Role toàn portal và quyền bên trong từng project là hai lớp độc lập.</p></div>
+</section>
+@if (!string.IsNullOrWhiteSpace(Status)) { <div class="form-notice success">Đã cập nhật quyền dự án.</div> }
+@if (!string.IsNullOrWhiteSpace(Error)) { <div class="form-notice error">@Error</div> }
+
+<section class="management-panel access-grant-panel">
+    <header><div><h2>Cấp hoặc thay đổi quyền</h2><p>Một user chỉ có một role hiệu lực trên mỗi project.</p></div></header>
+    <form class="portal-form inline-grant-form" method="post" action="/management/access/grant" onsubmit="return confirm('Bạn có chắc chắn muốn áp dụng quyền này?');">
+        <AntiforgeryToken />
+        <label><span>Tài khoản</span><select name="userId" required>@foreach (var user in Users) { <option value="@user.Id">@user.DisplayName (@user.Username)</option> }</select></label>
+        <label><span>Dự án</span><select name="projectId" required>@foreach (var project in Projects) { <option value="@project.Id">@project.DisplayName</option> }</select></label>
+        <label><span>Project role</span><select name="accessRole"><option>Viewer</option><option>Operator</option><option>Administrator</option></select></label>
+        <button class="management-primary-action" type="submit">Áp dụng quyền</button>
+    </form>
+</section>
+
+<section class="management-panel table-panel access-table-panel">
+    <header><div><h2>Quyền hiện tại</h2><p>@Access.Count liên kết user–project.</p></div></header>
+    <div class="management-table-wrap"><table class="management-table"><thead><tr><th>Tài khoản</th><th>Dự án</th><th>Quyền</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+    @foreach (var access in Access)
+    {
+        <tr><td><strong>@access.Username</strong></td><td>@access.ProjectName</td><td>@access.AccessRole</td><td><span class="table-status @(access.IsEnabled ? "enabled" : "disabled")">@(access.IsEnabled ? "Enabled" : "Revoked")</span></td><td>
+            @if (access.IsEnabled)
+            {
+                <form method="post" action="/management/access/revoke" onsubmit="return confirm('Bạn có chắc chắn muốn thu hồi quyền này?');"><AntiforgeryToken /><input type="hidden" name="userId" value="@access.UserId" /><input type="hidden" name="projectId" value="@access.ProjectId" /><button class="table-action danger" type="submit">Thu hồi</button></form>
+            }
+        </td></tr>
+    }
+    </tbody></table></div>
+</section>
+
+@code {
+    [SupplyParameterFromQuery(Name = "status")] public string? Status { get; set; }
+    [SupplyParameterFromQuery(Name = "error")] public string? Error { get; set; }
+    private IReadOnlyList<PortalUserSummary> Users { get; set; } = [];
+    private IReadOnlyList<ManagementProjectCard> Projects { get; set; } = [];
+    private IReadOnlyList<ProjectAccessSummary> Access { get; set; } = [];
+    protected override async Task OnInitializedAsync()
+    {
+        Users = await Administration.GetUsersAsync();
+        Projects = await Administration.GetProjectsAsync();
+        Access = await Administration.GetAccessAsync();
+    }
+}

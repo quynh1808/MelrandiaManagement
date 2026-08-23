@@ -1,3 +1,6 @@
+@inject PublicProjectCatalog ProjectCatalog
+@inject PublicArticleCatalog ArticleCatalog
+
 <header class="site-header" data-site-header>
     <div class="site-header-inner">
         <a class="wordmark" href="/" aria-label="Melrandia - Trang chủ">
@@ -20,8 +23,10 @@
                     </button>
                 </span>
                 <div class="nav-dropdown-menu project-dropdown" aria-label="Danh sách dự án">
-                    <a href="/du-an/ams"><span>01</span><strong>Aquaculture Monitoring System</strong><small>Giám sát nuôi trồng thủy sản</small></a>
-                    <a href="/du-an/agriculture-system"><span>02</span><strong>Agriculture System</strong><small>Định hướng nông nghiệp thông minh</small></a>
+                    @foreach (var project in PublicProjects)
+                    {
+                        <a href="@($"/du-an/{project.Slug}")"><span>@project.Sequence</span><strong>@project.DisplayName</strong><small>@project.Status</small></a>
+                    }
                     <a class="dropdown-overview" href="/du-an">Xem tất cả dự án <i aria-hidden="true">→</i></a>
                 </div>
             </div>
@@ -34,9 +39,10 @@
                     </button>
                 </span>
                 <div class="nav-dropdown-menu article-dropdown" aria-label="Danh mục bài viết">
-                    <a href="/bai-viet/kinh-te"><span>01</span><strong>Kinh tế</strong><small>Góc nhìn và câu chuyện thị trường</small></a>
-                    <a href="/bai-viet/cong-nghe"><span>02</span><strong>Công nghệ</strong><small>IoT, phần mềm và tự động hóa</small></a>
-                    <a href="/bai-viet/gioi-thieu-sach"><span>03</span><strong>Giới thiệu sách</strong><small>Tri thức đáng đọc và suy ngẫm</small></a>
+                    @foreach (var category in ArticleCategories)
+                    {
+                        <a href="@($"/bai-viet/{category.Slug}")"><span>@category.Sequence</span><strong>@category.DisplayName</strong><small>@category.PublishedCount bài viết</small></a>
+                    }
                     <a class="dropdown-overview" href="/bai-viet">Xem tất cả bài viết <i aria-hidden="true">→</i></a>
                 </div>
             </div>
@@ -64,7 +70,14 @@
                 </div>
             </div>
             <span class="tool-divider" aria-hidden="true"></span>
-            <a class="login-link" href="/login"><span>Đăng nhập</span><i aria-hidden="true">→</i></a>
+            <AuthorizeView>
+                <Authorized>
+                    <a class="login-link" href="/Management"><span>Quản lý</span><i aria-hidden="true">→</i></a>
+                </Authorized>
+                <NotAuthorized>
+                    <a class="login-link" href="/login"><span>Đăng nhập</span><i aria-hidden="true">→</i></a>
+                </NotAuthorized>
+            </AuthorizeView>
             <button class="mobile-menu-button" type="button" data-menu-toggle aria-expanded="false" aria-controls="mobile-navigation">
                 <span class="sr-only">Mở menu</span><i></i><i></i><i></i>
             </button>
@@ -76,16 +89,30 @@
         <NavLink href="/gioi-thieu">Giới thiệu</NavLink>
         <div class="mobile-nav-group">
             <NavLink href="/du-an">Dự án</NavLink>
-            <a href="/du-an/ams">Aquaculture Monitoring System</a>
-            <a href="/du-an/agriculture-system">Agriculture System</a>
+            @foreach (var project in PublicProjects)
+            {
+                <a href="@($"/du-an/{project.Slug}")">@project.DisplayName</a>
+            }
         </div>
         <div class="mobile-nav-group">
             <NavLink href="/bai-viet">Bài viết</NavLink>
-            <a href="/bai-viet/kinh-te">Kinh tế</a>
-            <a href="/bai-viet/cong-nghe">Công nghệ</a>
-            <a href="/bai-viet/gioi-thieu-sach">Giới thiệu sách</a>
+            @foreach (var category in ArticleCategories) { <a href="@($"/bai-viet/{category.Slug}")">@category.DisplayName</a> }
         </div>
         <NavLink href="/lien-he">Liên hệ</NavLink>
-        <NavLink href="/login">Đăng nhập</NavLink>
+        <AuthorizeView>
+            <Authorized><NavLink href="/Management">Quản lý</NavLink></Authorized>
+            <NotAuthorized><NavLink href="/login">Đăng nhập</NavLink></NotAuthorized>
+        </AuthorizeView>
     </nav>
 </header>
+
+@code {
+    private IReadOnlyList<PublicProjectPreview> PublicProjects { get; set; } = [];
+    private IReadOnlyList<PublicArticleCategory> ArticleCategories { get; set; } = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        PublicProjects = await ProjectCatalog.GetPublishedProjectsAsync();
+        ArticleCategories = await ArticleCatalog.GetCategoriesAsync();
+    }
+}

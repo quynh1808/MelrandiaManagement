@@ -12,3 +12,5 @@ obj/
 *.key
 *.pfx
 *.p12
+# Runtime uploads are persistent operational data, not source code.
+App_Data/

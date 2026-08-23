@@ -1,0 +1,38 @@
+@page "/Management/Integrations"
+@attribute [Authorize(Policy = "ManagePortal")]
+@layout ManagementLayout
+@inject PortalAdministrationService Administration
+
+<PageTitle>Tích hợp · Melrandia</PageTitle>
+
+<section class="management-page-heading compact"><div><h1>Tích hợp</h1><p>Các dependency nội bộ và kết nối project được quản lý bởi MelrandiaManagement.</p></div><a class="management-primary-action" href="/Management/Projects#new-project">＋ Thêm project endpoint</a></section>
+
+<section class="management-kpi-grid">
+    <article><span class="kpi-icon blue">⌘</span><div><small>Tổng tích hợp</small><strong>@IntegrationCount</strong><em>Database + projects</em></div></article>
+    <article><span class="kpi-icon green">✓</span><div><small>Connected</small><strong>@ConnectedCount</strong><em>Health xác nhận</em></div></article>
+    <article><span class="kpi-icon violet">↗</span><div><small>HTTP endpoints</small><strong>@Projects.Count(x => !string.IsNullOrWhiteSpace(x.PublicUrl))</strong><em>Project access</em></div></article>
+    <article><span class="kpi-icon red">!</span><div><small>Failed sync</small><strong>@Projects.Count(x => x.HealthStatus == "Unavailable")</strong><em>Health polling</em></div></article>
+</section>
+
+<div class="management-content-aside integrations-layout">
+    <section class="management-panel integrations-catalog"><header class="panel-toolbar"><div><h2>Integration catalog</h2><p>Secret không bao giờ được render lại trên giao diện này.</p></div><label class="compact-select"><select data-management-status-filter aria-label="Lọc tích hợp"><option value="all">All status</option><option value="connected">Connected</option><option value="attention">Attention</option></select></label></header>
+        <div class="integration-card-grid">
+            <article class="integration-card" data-status="connected" data-search-item="PostgreSQL database"><div class="integration-card-head"><span class="integration-icon database">PG</span><div><h3>PostgreSQL</h3><p>Identity, registry, access và audit.</p></div><b>⋮</b></div><span class="health-pill healthy"><i></i>Connected</span><footer><span><small>Loại</small><strong>Database</strong></span><span><small>Phạm vi</small><strong>MM riêng</strong></span><a href="/health/ready">Health</a></footer></article>
+            @foreach (var project in Projects)
+            {
+                var connected = project.HealthStatus == "Healthy";
+                <article class="integration-card" data-status="@(connected ? "connected" : "attention")" data-search-item="@($"{project.DisplayName} {project.ProjectKey} HTTP health")"><div class="integration-card-head"><span class="project-monogram mini @ProjectColor(project.DisplayOrder)">@project.ShortName</span><div><h3>@project.DisplayName</h3><p>Project endpoint và readiness monitoring.</p></div><b>⋮</b></div><span class="health-pill @(connected ? "healthy" : project.HealthStatus == "Unavailable" ? "unavailable" : "unknown")"><i></i>@(connected ? "Connected" : project.HealthStatus)</span><footer><span><small>Loại</small><strong>HTTP API</strong></span><span><small>Sync health</small><strong>@FormatDate(project.LastHealthCheckAtUtc)</strong></span><a href="/Management/Projects">Cấu hình</a></footer></article>
+            }
+        </div>
+    </section>
+    <aside class="management-side-column"><section class="management-panel integration-security-panel"><header><h2>API &amp; secrets</h2></header><div><span>API keys</span><strong>Chưa triển khai</strong></div><div><span>Webhook</span><strong>Chưa triển khai</strong></div><div><span>Database secret</span><strong>Environment only</strong></div></section><section class="management-panel activity-panel"><header><h2>Recent sync</h2></header><div class="activity-list">@foreach (var p in Projects.Take(6)){<article><span>•</span><div><strong>@p.ShortName health</strong><small>@p.HealthStatus</small></div><time>@FormatDate(p.LastHealthCheckAtUtc)</time></article>}</div></section></aside>
+</div>
+
+@code {
+    private IReadOnlyList<ManagementProjectCard> Projects { get; set; } = [];
+    private int IntegrationCount => Projects.Count + 1;
+    private int ConnectedCount => Projects.Count(x => x.HealthStatus == "Healthy") + 1;
+    protected override async Task OnInitializedAsync() => Projects = await Administration.GetProjectsAsync();
+    private static string FormatDate(DateTime? value) => value?.ToLocalTime().ToString("dd/MM HH:mm") ?? "Chưa kiểm tra";
+    private static string ProjectColor(int order) => (order % 4) switch { 0 => "orange", 1 => "blue", 2 => "green", _ => "violet" };
+}
