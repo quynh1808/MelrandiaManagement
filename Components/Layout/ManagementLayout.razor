@@ -48,7 +48,9 @@
                             <summary aria-label="Mở menu tài khoản">
                                 <span class="management-user-avatar">@Initials(auth.User.Identity?.Name)</span>
                                 <span class="management-account-copy"><strong>@auth.User.Identity?.Name</strong><small>Administrator</small></span>
-                                <i aria-hidden="true">⌄</i>
+                                <svg class="management-account-chevron" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+                                    <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+                                </svg>
                             </summary>
                             <div class="management-account-dropdown">
                                 <div><strong>@auth.User.Identity?.Name</strong><small>Quản trị viên Melrandia</small></div>

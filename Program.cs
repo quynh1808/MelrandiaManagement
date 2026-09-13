@@ -177,7 +177,7 @@ app.MapPost("/auth/login", async (HttpContext http, IAntiforgery antiforgery,
     var returnUrl = SafeLocalReturnUrl(form["returnUrl"].ToString(), "/Management");
     var user = await userManager.FindByNameAsync(username);
     if (user is null || !user.IsEnabled)
-        return Results.Redirect($"/login?error=invalid&returnUrl={Uri.EscapeDataString(returnUrl)}");
+        return Results.Redirect($"/login?error=invalid&username={Uri.EscapeDataString(username)}&returnUrl={Uri.EscapeDataString(returnUrl)}");
 
     var result = await signInManager.PasswordSignInAsync(user, password, false, lockoutOnFailure: true);
     if (result.Succeeded)
@@ -186,7 +186,7 @@ app.MapPost("/auth/login", async (HttpContext http, IAntiforgery antiforgery,
         return Results.Redirect(returnUrl);
     }
     var error = result.IsLockedOut ? "locked" : "invalid";
-    return Results.Redirect($"/login?error={error}&returnUrl={Uri.EscapeDataString(returnUrl)}");
+    return Results.Redirect($"/login?error={error}&username={Uri.EscapeDataString(username)}&returnUrl={Uri.EscapeDataString(returnUrl)}");
 }).AllowAnonymous().RequireRateLimiting("login");
 
 app.MapPost("/auth/logout", async (HttpContext http, IAntiforgery antiforgery,

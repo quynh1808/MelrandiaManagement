@@ -1,5 +1,6 @@
 @page "/"
 @inject PublicProjectCatalog ProjectCatalog
+@inject PublicArticleCatalog ArticleCatalog
 
 <PageTitle>Melrandia · Internet of Things</PageTitle>
 <HeadContent>
@@ -14,13 +15,30 @@
         <h1>Kết nối ý tưởng<br />với <em>thế giới thực.</em></h1>
         <p>Melrandia là không gian phát triển và quản lý các dự án Internet of Things độc lập, hướng dữ liệu quan sát được thành những hành động có giá trị trong thực tế.</p>
         <div class="hero-actions">
-            <a class="button button-primary" href="#featured-projects">Khám phá dự án <span aria-hidden="true">→</span></a>
-            <a class="button button-secondary" href="/gioi-thieu">Tìm hiểu Melrandia</a>
+            <a class="button button-primary" href="#featured-projects">Khám phá dự án →<span aria-hidden="true"></span></a>
+            <a class="button button-secondary" href="/gioi-thieu">Tìm hiểu thêm <span aria-hidden="true"></span></a>
         </div>
         <div class="hero-facts" aria-label="Thông tin chính">
-            <span><strong>01</strong><small>Dự án đầu tiên</small></span>
-            <span><strong>IoT</strong><small>Lĩnh vực phát triển</small></span>
-            <span><strong>LAN</strong><small>Môi trường hiện tại</small></span>
+            <span>
+                <img class="fact-icon" src="/images/project-done.png" alt="" width="28" height="28" />
+                <div class="fact-copy">
+                    <strong>01</strong>
+                    <small>Dự án đầu tiên</small>
+                </div>
+            </span>
+            <span>
+                <img class="fact-icon" src="/images/iot-comunication.png" alt="" width="28" height="28" />
+                <div class="fact-copy">
+                    <strong>IoT</strong>
+                    <small>Lĩnh vực phát triển</small>
+                </div>
+            </span>
+            <span>
+                <div class="fact-copy">
+                    <strong>LAN</strong>
+                    <small>Môi trường hiện tại</small>
+                </div>
+            </span>
         </div>
     </div>
     <div class="hero-visual reveal is-visible">
@@ -46,7 +64,7 @@
         <a class="text-link" href="/du-an">Xem tất cả dự án <span aria-hidden="true">→</span></a>
     </div>
     <div class="project-grid">
-        @foreach (var project in Projects.Where(project => project.IsFeatured))
+        @foreach (var project in FeaturedProjects)
         {
             <ProjectPreviewCard Project="project" />
         }
@@ -77,11 +95,38 @@
         <div><span class="eyebrow">Góc phát triển</span><h2>Bài viết và cập nhật.</h2></div>
         <a class="text-link" href="/bai-viet">Đến trang bài viết <span aria-hidden="true">→</span></a>
     </div>
-    <div class="article-empty reveal">
-        <span>Chưa có bài viết được xuất bản</span>
-        <h3>Những ghi chép đầu tiên đang được chuẩn bị.</h3>
-        <p>Các cập nhật về quá trình nghiên cứu, xây dựng và vận hành dự án sẽ được đăng tại đây.</p>
-    </div>
+    @if (RecentArticles.Count == 0)
+    {
+        <div class="article-empty reveal">
+            <span>Chưa có bài viết được xuất bản</span>
+            <h3>Những ghi chép đầu tiên đang được chuẩn bị.</h3>
+            <p>Các cập nhật về quá trình nghiên cứu, xây dựng và vận hành dự án sẽ được đăng tại đây.</p>
+        </div>
+    }
+    else
+    {
+        <div class="public-article-grid">
+            @foreach (var article in RecentArticles)
+            {
+                <a class="public-article-card reveal" href="@ArticleUrl(article)">
+                    @if (!string.IsNullOrWhiteSpace(article.CoverUrl))
+                    {
+                        <img src="@article.CoverUrl" alt="@article.CoverAlt" loading="lazy" />
+                    }
+                    else
+                    {
+                        <span class="article-cover-placeholder">@article.CategoryName</span>
+                    }
+                    <div>
+                        <small>@article.CategoryName · @article.PublishedAtUtc.ToLocalTime().ToString("dd/MM/yyyy")</small>
+                        <h2>@article.Title</h2>
+                        <p>@article.Summary</p>
+                        <strong>Đọc bài viết →</strong>
+                    </div>
+                </a>
+            }
+        </div>
+    }
 </section>
 
 <section class="home-cta reveal">
@@ -99,7 +144,16 @@
 
 @code {
     private IReadOnlyList<PublicProjectPreview> Projects { get; set; } = [];
+    private IReadOnlyList<PublicArticleSummary> RecentArticles { get; set; } = [];
 
-    protected override async Task OnInitializedAsync() =>
+    private IEnumerable<PublicProjectPreview> FeaturedProjects =>
+        Projects.Any(p => p.IsFeatured) ? Projects.Where(p => p.IsFeatured) : Projects;
+
+    protected override async Task OnInitializedAsync()
+    {
         Projects = await ProjectCatalog.GetPublishedProjectsAsync();
+        RecentArticles = await ArticleCatalog.GetPublishedArticlesAsync(take: 3);
+    }
+
+    private static string ArticleUrl(PublicArticleSummary article) => $"/bai-viet/{article.CategorySlug}/{article.Slug}";
 }

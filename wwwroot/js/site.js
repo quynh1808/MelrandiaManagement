@@ -83,15 +83,43 @@
             elements.forEach(element => element.classList.add("is-visible"));
             return;
         }
+
         if (revealObserver) revealObserver.disconnect();
         revealObserver = new IntersectionObserver(entries => {
             entries.forEach(entry => {
-                if (!entry.isIntersecting) return;
-                entry.target.classList.add("is-visible");
-                revealObserver.unobserve(entry.target);
+                if (entry.isIntersecting) {
+                    entry.target.classList.add("is-visible");
+                    revealObserver.unobserve(entry.target);
+                }
             });
-        }, { threshold: 0.12, rootMargin: "0px 0px -36px" });
-        elements.forEach(element => revealObserver.observe(element));
+        }, { threshold: 0.08, rootMargin: "0px 0px -20px" });
+
+        elements.forEach(element => {
+            const rect = element.getBoundingClientRect();
+            if (rect.top < (window.innerHeight || document.documentElement.clientHeight) - 20 && rect.bottom > 0) {
+                element.classList.add("is-visible");
+            } else {
+                revealObserver.observe(element);
+            }
+        });
+
+        if (!window.revealMutationObserver && "MutationObserver" in window) {
+            window.revealMutationObserver = new MutationObserver(() => {
+                const pending = document.querySelectorAll(".reveal:not(.is-visible)");
+                if (pending.length && revealObserver) {
+                    pending.forEach(el => {
+                        const rect = el.getBoundingClientRect();
+                        if (rect.top < (window.innerHeight || document.documentElement.clientHeight) - 20 && rect.bottom > 0) {
+                            el.classList.add("is-visible");
+                        } else {
+                            revealObserver.observe(el);
+                        }
+                    });
+                }
+            });
+            window.revealMutationObserver.observe(document.body, { childList: true, subtree: true });
+        }
+
         applyManagementFilters();
     }
 

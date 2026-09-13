@@ -39,7 +39,7 @@
                 <input type="hidden" name="returnUrl" value="@SafeReturnUrl" />
                 <label>
                     <span>Tên đăng nhập</span>
-                    <input name="username" autocomplete="username" placeholder="Nhập tên đăng nhập" required autofocus />
+                    <input name="username" value="@Username" autocomplete="username" placeholder="Nhập tên đăng nhập" required autofocus />
                 </label>
                 <label>
                     <span>Mật khẩu</span>
@@ -65,6 +65,9 @@
 
     [SupplyParameterFromQuery(Name = "error")]
     public string? ErrorCode { get; set; }
+
+    [SupplyParameterFromQuery(Name = "username")]
+    public string? Username { get; set; }
 
     private string SafeReturnUrl =>
         string.IsNullOrWhiteSpace(RequestedReturnUrl) || !RequestedReturnUrl.StartsWith('/') ||
