@@ -206,7 +206,7 @@ h1:focus-visible {
     right: 0;
     bottom: -10px;
     left: 0;
-    height: 1px;
+    height: 2px;
     background: var(--forest);
     transform: scaleX(0);
     transition: transform .2s ease;
@@ -322,13 +322,13 @@ h1:focus-visible {
     display: none;
 }
 
-/* Header nhận diện và điều hướng mở rộng theo cùng bảng màu với AMS. */
+/* Header desktop chạy toàn chiều ngang với ba vùng co giãn: logo trái, navigation giữa và công cụ phải. */
 .site-header-inner {
-    width: min(calc(100% - 36px), 1280px);
-    margin: 0 auto;
-    padding: 0;
-    display: flex;
-    justify-content: center;
+    width: 100%;
+    margin: 0;
+    padding: 0 clamp(22px, 3.7vw, 70px);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     gap: clamp(20px, 2.2vw, 36px);
 }
 
@@ -336,6 +336,7 @@ h1:focus-visible {
     display: inline-flex;
     align-items: center;
     gap: 12px;
+    justify-self: start;
 }
 
 .brand-avatar {
@@ -362,19 +363,26 @@ h1:focus-visible {
 }
 
 .wordmark-copy>strong {
-    color: var(--navy);
+    color: var(--ink-soft);
+    font-family: inherit;
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: 0;
 }
 
 .wordmark-copy>span {
     margin-top: 6px;
     color: var(--ink-soft);
-    font-size: 13px;
+    font-family: inherit;
+    font-size: 18px;
     font-weight: 400;
+    letter-spacing: 0;
 }
 
 .desktop-nav {
     flex: 0 0 auto;
     align-self: stretch;
+    justify-self: center;
     gap: clamp(16px, 1.7vw, 27px);
 }
 
@@ -545,6 +553,7 @@ h1:focus-visible {
 .header-tools {
     flex: 0 0 auto;
     gap: 9px;
+    justify-self: end;
 }
 
 .theme-toggle,
@@ -763,6 +772,18 @@ h1:focus-visible {
     box-shadow: 0 11px 26px rgba(36, 99, 235, .32);
 }
 
+.login-arrow {
+    width: 1em;
+    height: 1em;
+    flex: 0 0 1em;
+    display: block;
+    transition: transform .2s ease;
+}
+
+.login-link:hover .login-arrow {
+    transform: translateX(3px);
+}
+
 .login-link i {
     font-style: normal;
     transition: transform .2s ease;
@@ -778,26 +799,80 @@ h1:focus-visible {
     box-shadow: 0 9px 24px rgba(50, 201, 227, .18);
 }
 
+/* Mobile groups remain collapsed until their trigger is activated. */
 .mobile-nav-group {
     display: grid;
 }
 
+.mobile-nav-group-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--line);
+}
+
+.mobile-nav-group-trigger>a {
+    flex: 1;
+}
+
+.mobile-nav-group-trigger>button {
+    width: 48px;
+    min-height: 58px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 0;
+    background: transparent;
+    color: var(--ink-soft);
+    cursor: pointer;
+}
+
+.mobile-nav-group-trigger>button .chevron {
+    transform: translateY(-2px) rotate(45deg);
+    transition: transform .2s ease;
+}
+
+.mobile-nav-group.is-open .mobile-nav-group-trigger>button .chevron {
+    transform: translateY(2px) rotate(225deg);
+}
+
+.mobile-nav-group-items {
+    display: none;
+}
+
+.mobile-nav-group.is-open .mobile-nav-group-items {
+    display: grid;
+}
+
 .mobile-nav>a,
-.mobile-nav-group>a:first-child {
+.mobile-nav-group-trigger>a {
     font-weight: 700;
 }
 
-.mobile-nav-group>a:not(:first-child) {
+.mobile-nav-group-items>a {
     padding-left: 20px;
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr);
+    column-gap: 10px;
     color: var(--ink-soft);
     font-size: 16px;
+}
+
+/* Keep mobile item numbering aligned with the desktop dropdown pattern. */
+.mobile-nav-item-sequence {
+    color: var(--cyan);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .08em;
 }
 
 :root[data-theme="dark"] .desktop-nav a,
 :root[data-theme="dark"] .mobile-nav a,
 :root[data-theme="dark"] .nav-dropdown-trigger>button,
 :root[data-theme="dark"] .theme-toggle,
-:root[data-theme="dark"] .language-toggle {
+:root[data-theme="dark"] .language-toggle,
+:root[data-theme="dark"] .wordmark-copy>strong,
+:root[data-theme="dark"] .wordmark-copy>span {
     color: #ffffff;
 }
 
@@ -812,7 +887,9 @@ h1:focus-visible {
 :root[data-theme="light"] .mobile-nav a,
 :root[data-theme="light"] .nav-dropdown-trigger>button,
 :root[data-theme="light"] .theme-toggle,
-:root[data-theme="light"] .language-toggle {
+:root[data-theme="light"] .language-toggle,
+:root[data-theme="light"] .wordmark-copy>strong,
+:root[data-theme="light"] .wordmark-copy>span {
     color: #000000;
 }
 
@@ -884,7 +961,7 @@ h1:focus-visible {
     align-items: center;
     gap: 9px;
     color: var(--forest);
-    font-size: 15px;
+    font-size: 20px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .09em;
@@ -907,7 +984,10 @@ h1:focus-visible {
 }
 
 .hero-copy h1 em {
-    color: var(--forest);
+    background-image: linear-gradient(90deg, #8B3DFF 0%, #6A6FE0 50%, #25A8E8 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
     font-style: italic;
     font-weight: 400;
 }
@@ -950,6 +1030,18 @@ h1:focus-visible {
 .button-primary {
     background: var(--forest-deep);
     color: var(--paper-strong);
+}
+
+.button-arrow {
+    width: 1em;
+    height: 1em;
+    flex: 0 0 1em;
+    display: block;
+    transition: transform .2s ease;
+}
+
+.button-primary:hover .button-arrow {
+    transform: translateX(3px);
 }
 
 :root[data-theme="dark"] .button-primary {
@@ -1303,7 +1395,7 @@ h1:focus-visible {
     flex-direction: column;
     overflow: hidden;
     border: 1px solid var(--line);
-    border-radius: 20px;
+    border-radius: 4px;
     background: var(--paper-strong);
     transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
 }
@@ -1449,7 +1541,7 @@ h1:focus-visible {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     overflow: hidden;
     border: 1px solid var(--line);
-    border-radius: 20px;
+    border-radius: 1px;
     background: var(--line);
     gap: 1px;
 }
@@ -1977,6 +2069,7 @@ h1:focus-visible {
 
     .site-header-inner {
         width: calc(100% - 40px);
+        display: flex;
         justify-content: space-between;
         padding: 0;
     }
@@ -2064,6 +2157,10 @@ h1:focus-visible {
 }
 
 @media (max-width: 640px) {
+
+    .project-registry-layout .registry-list-panel {
+        min-height: 360px;
+    }
     :root {
         --header-height: 78px;
     }
@@ -2617,11 +2714,11 @@ h1:focus-visible {
 
 .management-nav-label {
     padding: 0 12px 8px;
-    color: var(--ink-soft);
-    font-size: 11px;
+    color:#0367fc;
+    font-size: 14px;
     font-weight: 700;
-    letter-spacing: .12em;
-    text-transform: uppercase;
+    letter-spacing: .10em;
+    text-transform: sentence-case;
 }
 
 .management-nav a {
@@ -2632,7 +2729,7 @@ h1:focus-visible {
     padding: 0 13px;
     border-radius: 10px;
     color: var(--ink-soft);
-    font-weight: 700;
+    font-weight: 550;
     transition: .2s ease;
 }
 
@@ -2642,6 +2739,14 @@ h1:focus-visible {
     font-style: normal;
     font-size: 19px;
     text-align: center;
+}
+
+.management-nav a .management-nav-icon {
+    width: 24px;
+    height: 24px;
+    flex: 0 0 24px;
+    display: block;
+    object-fit: contain;
 }
 
 .management-nav a:hover {
@@ -2657,6 +2762,10 @@ h1:focus-visible {
 
 .management-nav a.active i {
     color: #fff;
+}
+
+.management-nav a.active .management-nav-icon {
+    filter: brightness(0) invert(1);
 }
 
 .management-sidebar-note {
@@ -2682,8 +2791,23 @@ h1:focus-visible {
 .management-public-link {
     margin-top: 13px;
     padding: 11px 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
     color: var(--primary);
     font-weight: 700;
+}
+
+.management-public-arrow {
+    width: 1em;
+    height: 1em;
+    flex: 0 0 1em;
+    display: block;
+    transition: transform .2s ease;
+}
+
+.management-public-link:hover .management-public-arrow {
+    transform: translateX(-3px);
 }
 
 .management-workspace {
@@ -2830,6 +2954,69 @@ h1:focus-visible {
     cursor: pointer;
 }
 
+.project-modal {
+    width: min(760px, calc(100% - 32px));
+    max-height: calc(100vh - 32px);
+    padding: 0;
+    overflow: auto;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: 0 24px 80px rgba(20, 41, 78, .28);
+}
+
+.project-modal::backdrop {
+    background: rgba(4, 13, 29, .55);
+    backdrop-filter: blur(4px);
+}
+
+.project-modal-card {
+    padding: 24px;
+}
+
+.project-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line);
+}
+
+.project-modal-header h2,
+.project-modal-header p {
+    margin: 0;
+}
+
+.project-modal-header p {
+    margin-top: 4px;
+    color: var(--ink-soft);
+    font-size: 14px;
+}
+
+.project-modal-close {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--ink-soft);
+    background: var(--surface-2);
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.project-modal-close:hover {
+    color: var(--primary);
+    background: var(--primary-soft);
+}
+
 .management-secondary-action {
     color: var(--primary);
     background: var(--primary-soft);
@@ -2846,7 +3033,7 @@ h1:focus-visible {
 .management-kpi-grid article {
     min-height: 126px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 18px;
     padding: 21px;
     border: 1px solid var(--line);
@@ -2887,20 +3074,23 @@ h1:focus-visible {
 
 .management-kpi-grid article div {
     display: grid;
+    gap: 5px;
 }
 
 .management-kpi-grid small {
     color: var(--ink-soft);
+    font-size: 16px;
+    font-weight: 700;
 }
 
 .management-kpi-grid strong {
-    font-size: 32px;
+    font-size: 36px;
     line-height: 1.08;
 }
 
 .management-kpi-grid em {
     color: var(--ink-soft);
-    font-size: 12px;
+    font-size: 14px;
     font-style: normal;
 }
 
@@ -3189,6 +3379,15 @@ h1:focus-visible {
     grid-template-columns: minmax(320px, .72fr) minmax(0, 1.28fr);
     gap: 20px;
     align-items: start;
+}
+
+.project-registry-layout {
+    grid-template-columns: 1fr;
+}
+
+.project-registry-layout .registry-list-panel {
+    grid-column: 1 / -1;
+    min-height: clamp(420px, 52vh, 680px);
 }
 
 .management-form-panel .portal-form {
@@ -3781,8 +3980,171 @@ h1:focus-visible {
     align-items: start;
 }
 
+.management-overview-main {
+    min-width: 0;
+    display: grid;
+    gap: 18px;
+}
+
 .overview-project-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.project-table-wrap {
+    padding: 0 16px 16px;
+}
+
+.project-status-table {
+    min-width: 920px;
+}
+
+.project-status-table th,
+.project-status-table td {
+    padding: 14px 10px;
+    white-space: nowrap;
+}
+
+.project-status-table th {
+    font-size: 11px;
+}
+
+.project-status-table td:first-child,
+.project-status-table td:nth-child(2) {
+    display: table-cell;
+}
+
+.project-status-table td strong,
+.project-status-table td small {
+    display: block;
+}
+
+.project-status-table td small {
+    margin-top: 4px;
+    color: var(--ink-soft);
+    font-size: 11px;
+}
+
+.project-status-table tbody tr {
+    transition: background-color .2s ease;
+}
+
+.project-status-table tbody tr:hover {
+    background: var(--surface-2);
+}
+
+.project-label {
+    display: inline-flex;
+    padding: 5px 9px;
+    border-radius: 999px;
+    color: #087a46;
+    background: #ddf8e9;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.project-progress {
+    width: 92px;
+    height: 6px;
+    display: inline-block;
+    margin-right: 8px;
+    overflow: hidden;
+    vertical-align: middle;
+    border-radius: 999px;
+    background: var(--surface-3);
+}
+
+.project-progress span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--primary);
+}
+
+.project-access-link {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.project-access-link:hover {
+    color: var(--primary-strong);
+    text-decoration: underline;
+}
+
+.project-access-unavailable {
+    color: var(--ink-soft);
+    font-size: 12px;
+}
+
+.project-row-actions {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.project-actions-menu {
+    position: relative;
+    margin-left: auto;
+}
+
+.project-actions-menu summary {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    color: var(--ink-soft);
+    background: var(--surface-2);
+    font-size: 23px;
+    line-height: 1;
+    cursor: pointer;
+    list-style: none;
+}
+
+.project-actions-menu summary::-webkit-details-marker {
+    display: none;
+}
+
+.project-actions-menu summary:hover,
+.project-actions-menu[open] summary {
+    color: var(--primary);
+    background: var(--primary-soft);
+}
+
+.project-actions-menu>div {
+    position: absolute;
+    z-index: 30;
+    right: 0;
+    bottom: calc(100% + 6px);
+    width: max-content;
+    min-width: 170px;
+    max-width: min(220px, calc(100vw - 32px));
+    padding: 5px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--surface);
+    box-shadow: 0 14px 30px rgba(20, 41, 78, .18);
+}
+
+.project-actions-menu button {
+    width: 100%;
+    min-height: 34px;
+    padding: 0 9px;
+    border: 0;
+    border-radius: 6px;
+    color: var(--ink);
+    background: transparent;
+    font: inherit;
+    font-size: 12px;
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.project-actions-menu button:hover {
+    color: var(--primary);
+    background: var(--primary-soft);
 }
 
 .management-project-card {
@@ -4898,6 +5260,10 @@ h1:focus-visible {
 
     .management-overview-layout,
     .management-content-aside {
+        grid-template-columns: 1fr;
+    }
+
+    .management-overview-layout {
         grid-template-columns: 1fr;
     }
 

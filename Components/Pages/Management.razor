@@ -16,15 +16,16 @@ else
         <a class="management-primary-action" href="/Management/Projects#new-project"><span>＋</span> Thêm dự án</a>
     </section>
 
-    <section class="management-kpi-grid" aria-label="Chỉ số tổng quan">
-        <article><span class="kpi-icon blue">▱</span><div><small>Tổng dự án</small><strong>@Snapshot.TotalProjects</strong><em>Project Registry</em></div></article>
-        <article><span class="kpi-icon green">◫</span><div><small>Hệ thống hoạt động</small><strong>@Snapshot.HealthyProjects</strong><em>Health check thành công</em></div></article>
-        <article><span class="kpi-icon orange">△</span><div><small>Thông báo đang mở</small><strong>@UnavailableCount</strong><em>Dự án không phản hồi</em></div></article>
-        <article><span class="kpi-icon violet">☑</span><div><small>Việc cần hoàn thiện</small><strong>@PendingSetupCount</strong><em>Cấu hình dự án chưa đủ</em></div></article>
-    </section>
-
     <div class="management-overview-layout">
-        <section class="management-panel project-board">
+        <div class="management-overview-main">
+            <section class="management-kpi-grid" aria-label="Chỉ số tổng quan">
+                <article><img class="kpi-icon blue" src="/images/OverviewLayout/TotalProject.svg" alt="" aria-hidden="true" /><div><small>Tổng dự án</small><strong>@Snapshot.TotalProjects</strong><em>Project Registry</em></div></article>
+                <article><img class="kpi-icon green" src="/images/OverviewLayout/TotalServices.svg" alt="" aria-hidden="true" /><div><small>Tổng kết nối</small><strong>@Snapshot.HealthyProjects</strong><em>Health check thành công</em></div></article>
+                <article><img class="kpi-icon orange" src="/images/OverviewLayout/Alerts.svg" alt="" aria-hidden="true" /><div><small>Cảnh báo hệ thống</small><strong>@UnavailableCount</strong><em>Dự án không phản hồi</em></div></article>
+                <article><img class="kpi-icon violet" src="/images/OverviewLayout/PendingTasks.svg" alt="" aria-hidden="true" /><div><small>Tasks đang thực hiện</small><strong>@PendingSetupCount</strong><em>Cấu hình dự án chưa đủ</em></div></article>
+            </section>
+
+            <section class="management-panel project-board">
             <header class="panel-toolbar">
                 <div><h2>Dự án</h2><p>Trạng thái health và điểm truy cập của từng hệ thống.</p></div>
                 <div class="management-toolbar-actions">
@@ -51,7 +52,8 @@ else
                     }
                 </div>
             }
-        </section>
+            </section>
+        </div>
 
         <aside class="management-side-column overview-side-column">
             <section class="management-panel activity-panel">

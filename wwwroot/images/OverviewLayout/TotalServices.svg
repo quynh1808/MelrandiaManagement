@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="40 40 880 880" role="img" aria-labelledby="title">
+	<title id="title">Tổng kết nối</title>
+	<rect x="40" y="40" width="880" height="880" rx="170" fill="#cfe6d0" />
+	<g transform="translate(120 120) scale(.75)">
+		<path d="M40 840v-80h880v80H40Zm120-120q-33 0-56.5-23.5T80 640V200q0-33 23.5-56.5T160 120h640q33 0 56.5 23.5T880 200v440q0 33-23.5 56.5T800 720H160Zm0-80h640V200H160v440Zm0 0V200v440Z" fill="#07a814" />
+	</g>
+</svg>

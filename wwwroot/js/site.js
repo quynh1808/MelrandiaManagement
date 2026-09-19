@@ -66,12 +66,28 @@
         button.setAttribute("aria-expanded", "false");
         menu.classList.remove("is-open");
         document.body.classList.remove("menu-open");
+        closeMobileGroups();
+    }
+
+    // Keep only one mobile navigation group expanded at a time.
+    function closeMobileGroups(except) {
+        document.querySelectorAll("[data-mobile-nav-group].is-open").forEach(group => {
+            if (group === except) return;
+            group.classList.remove("is-open");
+            group.querySelector("[data-mobile-nav-group-toggle]")?.setAttribute("aria-expanded", "false");
+        });
+    }
+
+    function openProjectModal() {
+        const dialog = document.querySelector("[data-project-modal]");
+        if (dialog && !dialog.open) dialog.showModal();
     }
 
     function initializePage() {
         closeMobileMenu();
         closeDropdowns();
         restoreSavedTheme();
+        if (window.location.hash === "#new-project") openProjectModal();
         if (window.location.hash) {
             const target = document.getElementById(window.location.hash.slice(1));
             if (target?.matches("details")) target.open = true;
@@ -138,6 +154,21 @@
     }
 
     document.addEventListener("click", event => {
+        const projectModalOpen = event.target.closest("[data-project-modal-open]");
+        if (projectModalOpen) {
+            openProjectModal();
+            return;
+        }
+
+        const projectModalClose = event.target.closest("[data-project-modal-close]");
+        if (projectModalClose) {
+            projectModalClose.closest("[data-project-modal]")?.close();
+            return;
+        }
+
+        const projectModal = event.target.closest("[data-project-modal]");
+        if (projectModal && event.target === projectModal) projectModal.close();
+
         const passwordButton = event.target.closest("[data-password-toggle]");
         if (passwordButton) {
             const input = document.getElementById(passwordButton.dataset.passwordToggle);
@@ -164,6 +195,19 @@
             closeDropdowns(dropdown);
             dropdown.classList.toggle("is-open", opening);
             dropdownButton.setAttribute("aria-expanded", opening ? "true" : "false");
+            return;
+        }
+
+        // Mobile project and article groups use delegated click handling.
+        const mobileGroupButton = event.target.closest("[data-mobile-nav-group-toggle]");
+        if (mobileGroupButton) {
+            const group = mobileGroupButton.closest("[data-mobile-nav-group]");
+            if (!group) return;
+            const opening = !group.classList.contains("is-open");
+            closeMobileGroups(group);
+            group.classList.toggle("is-open", opening);
+            mobileGroupButton.setAttribute("aria-expanded", opening ? "true" : "false");
+            mobileGroupButton.setAttribute("aria-label", opening ? "Đóng danh sách" : "Mở danh sách");
             return;
         }
 

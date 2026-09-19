@@ -8,6 +8,7 @@
             <span class="wordmark-copy">
                 <strong>Melrandia</strong>
                 <span>Internet of Things</span>
+                
             </span>
         </a>
 
@@ -72,7 +73,7 @@
             <span class="tool-divider" aria-hidden="true"></span>
             <AuthorizeView>
                 <Authorized>
-                    <a class="login-link" href="/Management"><span>Quản lý →</span><i aria-hidden="true"></i></a>
+                    <a class="login-link" href="/Management"><span>Quản lý</span><img class="login-arrow" src="/images/arrow-right.svg" alt="" aria-hidden="true" /></a>
                 </Authorized>
                 <NotAuthorized>
                     <a class="login-link" href="/login"><span>Đăng nhập →</span><i aria-hidden="true"></i></a>
@@ -87,16 +88,27 @@
     <nav id="mobile-navigation" class="mobile-nav" aria-label="Điều hướng trên điện thoại" data-mobile-nav>
         <NavLink href="/" Match="NavLinkMatch.All">Trang chủ</NavLink>
         <NavLink href="/gioi-thieu">Giới thiệu</NavLink>
-        <div class="mobile-nav-group">
-            <NavLink href="/du-an">Dự án</NavLink>
-            @foreach (var project in PublicProjects)
-            {
-                <a href="@($"/du-an/{project.Slug}")">@project.DisplayName</a>
-            }
+        @* Project and article groups mirror the desktop dropdown on small screens. *@
+        <div class="mobile-nav-group" data-mobile-nav-group>
+            <span class="mobile-nav-group-trigger">
+                <NavLink href="/du-an">Dự án</NavLink>
+                <button type="button" data-mobile-nav-group-toggle aria-expanded="false" aria-label="Mở danh sách dự án"><i class="chevron" aria-hidden="true"></i></button>
+            </span>
+            <div class="mobile-nav-group-items">
+                @foreach (var project in PublicProjects)
+                {
+                    <a href="@($"/du-an/{project.Slug}")"><span class="mobile-nav-item-sequence">@project.Sequence</span><span>@project.DisplayName</span></a>
+                }
+            </div>
         </div>
-        <div class="mobile-nav-group">
-            <NavLink href="/bai-viet">Bài viết</NavLink>
-            @foreach (var category in ArticleCategories) { <a href="@($"/bai-viet/{category.Slug}")">@category.DisplayName</a> }
+        <div class="mobile-nav-group" data-mobile-nav-group>
+            <span class="mobile-nav-group-trigger">
+                <NavLink href="/bai-viet">Bài viết</NavLink>
+                <button type="button" data-mobile-nav-group-toggle aria-expanded="false" aria-label="Mở danh mục bài viết"><i class="chevron" aria-hidden="true"></i></button>
+            </span>
+            <div class="mobile-nav-group-items">
+                @foreach (var category in ArticleCategories) { <a href="@($"/bai-viet/{category.Slug}")"><span class="mobile-nav-item-sequence">@category.Sequence</span><span>@category.DisplayName</span></a> }
+            </div>
         </div>
         <NavLink href="/lien-he">Liên hệ</NavLink>
         <AuthorizeView>

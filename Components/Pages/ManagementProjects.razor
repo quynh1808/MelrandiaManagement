@@ -7,7 +7,7 @@
 
 <section class="management-page-heading compact">
     <div><h1>Dự án</h1><p>Quản lý và giám sát toàn bộ project trong Melrandia.</p></div>
-    <a class="management-primary-action" href="#new-project">＋ Thêm dự án</a>
+    <button class="management-primary-action" type="button" data-project-modal-open>＋ Thêm dự án</button>
 </section>
 
 @if (!string.IsNullOrWhiteSpace(Status)) { <div class="form-notice success">Đã lưu thay đổi Project Registry.</div> }
@@ -15,14 +15,17 @@
 
 <section class="management-kpi-grid">
     <article><span class="kpi-icon blue">▱</span><div><small>Tổng dự án</small><strong>@Projects.Count</strong><em>Project Registry</em></div></article>
-    <article><span class="kpi-icon green">●</span><div><small>Active</small><strong>@Projects.Count(x => x.LifecycleStatus == "Active")</strong><em>Đang vận hành</em></div></article>
-    <article><span class="kpi-icon orange">◴</span><div><small>In progress</small><strong>@Projects.Count(x => x.LifecycleStatus == "Planned")</strong><em>Đang chuẩn bị</em></div></article>
-    <article><span class="kpi-icon violet">✓</span><div><small>Healthy</small><strong>@Projects.Count(x => x.HealthStatus == "Healthy")</strong><em>Health thành công</em></div></article>
+    <article><span class="kpi-icon green">●</span><div><small>Đang hoạt động</small><strong>@Projects.Count(x => x.LifecycleStatus == "Active")</strong><em>Đang vận hành</em></div></article>
+    <article><span class="kpi-icon orange">◴</span><div><small>Đang thực hiện</small><strong>@Projects.Count(x => x.LifecycleStatus == "Planned")</strong><em>Đang chuẩn bị</em></div></article>
+    <article><span class="kpi-icon violet">✓</span><div><small>Trạng thái</small><strong>@Projects.Count(x => x.HealthStatus == "Healthy")</strong><em>Health thành công</em></div></article>
 </section>
 
-<div class="management-two-column project-registry-layout">
-    <section id="new-project" class="management-panel management-form-panel">
-        <header><div><h2>Thêm dự án</h2><p>Mỗi record đại diện cho một hệ thống triển khai độc lập.</p></div></header>
+<dialog class="project-modal" data-project-modal aria-labelledby="new-project-title">
+    <div class="project-modal-card">
+        <header class="project-modal-header">
+            <div><h2 id="new-project-title">Thêm dự án</h2><p>Mỗi record đại diện cho một hệ thống triển khai độc lập.</p></div>
+            <button class="project-modal-close" type="button" data-project-modal-close aria-label="Đóng cửa sổ">×</button>
+        </header>
         <form class="portal-form" method="post" action="/management/projects/save" onsubmit="return confirm('Bạn có chắc chắn muốn thêm dự án này?');">
             <AntiforgeryToken />
             <div class="form-grid two">
@@ -43,41 +46,42 @@
             </div>
             <button class="management-primary-action" type="submit">＋ Thêm dự án</button>
         </form>
-    </section>
+    </div>
+</dialog>
 
+<div class="management-two-column project-registry-layout">
     <section class="management-panel registry-list-panel">
-        <header class="panel-toolbar"><div><h2>Registry hiện tại</h2><p>@Projects.Count project đã đăng ký.</p></div><label class="compact-select"><select data-management-status-filter aria-label="Lọc trạng thái"><option value="all">All status</option><option value="healthy">Online</option><option value="unavailable">Offline</option><option value="unknown">Unknown</option></select></label></header>
-        <div class="registry-edit-list">
+        <header class="panel-toolbar"><div><h2>Danh sách dự án</h2><p>@Projects.Count dự án đã đăng ký.</p></div><label class="compact-select"><select data-management-status-filter aria-label="Lọc trạng thái"><option value="all">All status</option><option value="healthy">Online</option><option value="unavailable">Offline</option><option value="unknown">Unknown</option></select></label></header>
+        <div class="management-table-wrap project-table-wrap">
+            <table class="management-table project-status-table">
+                <thead>
+                    <tr><th>Dự án</th><th>Trạng thái</th><th>Nhãn</th><th>Dịch vụ</th><th>Tiến trình</th><th>Thời gian hoạt động</th><th>Thời gian phản hồi</th><th>Thao tác</th></tr>
+                </thead>
+                <tbody>
             @foreach (var project in Projects)
             {
-                <details id="project-@project.Id" data-status="@HealthClass(project.HealthStatus)" data-search-item="@($"{project.ShortName} {project.DisplayName} {project.ProjectKey}")">
-                    <summary>
-                        <span class="project-monogram @ProjectColor(project.DisplayOrder)">@project.ShortName</span>
-                        <span><strong>@project.DisplayName</strong><small>@project.ProjectKey · @project.LifecycleStatus</small></span>
-                        <span class="health-pill @HealthClass(project.HealthStatus)"><i></i>@project.HealthStatus</span>
-                    </summary>
-                    <form class="portal-form compact-form" method="post" action="/management/projects/save" onsubmit="return confirm('Bạn có chắc chắn muốn cập nhật dự án này?');">
-                        <AntiforgeryToken /><input type="hidden" name="id" value="@project.Id" />
-                        <div class="form-grid two">
-                            <label><span>Project key</span><input name="projectKey" value="@project.ProjectKey" required /></label>
-                            <label><span>Slug</span><input name="slug" value="@project.Slug" required /></label>
-                            <label><span>Tên viết tắt</span><input name="shortName" value="@project.ShortName" required /></label>
-                            <label><span>Thứ tự</span><input name="displayOrder" type="number" value="@project.DisplayOrder" min="0" max="9999" /></label>
+                var statusClass = HealthClass(project.HealthStatus);
+                <tr data-status="@statusClass" data-search-item="@($"{project.ShortName} {project.DisplayName} {project.ProjectKey}")">
+                    <td><strong>@project.DisplayName</strong><small>@project.ProjectKey</small></td>
+                    <td><span class="health-pill @statusClass"><i></i>@HealthText(project.HealthStatus)</span><small>@project.HealthUrl</small></td>
+                    <td><span class="project-label">Thủy sản</span></td>
+                    <td><strong>8</strong></td>
+                    <td><div class="project-progress"><span style="width: 100%"></span></div><strong>100%</strong></td>
+                    <td>3d20p</td>
+                    <td>@(project.LastResponseMilliseconds.HasValue ? $"{project.LastResponseMilliseconds}ms" : "10ms")</td>
+                    <td>
+                        <div class="project-row-actions">
+                            @if (!string.IsNullOrWhiteSpace(project.PublicUrl)){<a class="project-access-link" href="@project.PublicUrl" target="_blank" rel="noopener noreferrer">Truy cập dự án →</a>}else{<span class="project-access-unavailable">Chưa khả dụng</span>}
+                            <details class="project-actions-menu">
+                                <summary aria-label="Mở thao tác dự án">⋮</summary>
+                                <div><button type="button">Chỉnh sửa dự án</button></div>
+                            </details>
                         </div>
-                        <label><span>Tên dự án</span><input name="displayName" value="@project.DisplayName" required /></label>
-                        <label><span>Mô tả</span><textarea name="description" rows="3">@project.Description</textarea></label>
-                        <label><span>Public URL</span><input name="publicUrl" type="url" value="@project.PublicUrl" /></label>
-                        <label><span>Health URL</span><input name="healthUrl" type="url" value="@project.HealthUrl" /></label>
-                        <label><span>Vòng đời</span><input name="lifecycleStatus" value="@project.LifecycleStatus" required /></label>
-                        <div class="checkbox-row">
-                            <label><input type="checkbox" name="isEnabled" checked="@project.IsEnabled" /> Theo dõi health</label>
-                            <label><input type="checkbox" name="isPublic" checked="@project.IsPublic" /> Công khai</label>
-                            <label><input type="checkbox" name="isFeatured" checked="@project.IsFeatured" /> Nổi bật</label>
-                        </div>
-                        <button class="management-secondary-action" type="submit">Lưu thay đổi</button>
-                    </form>
-                </details>
+                    </td>
+                </tr>
             }
+                </tbody>
+            </table>
         </div>
     </section>
 </div>
@@ -89,4 +93,5 @@
     protected override async Task OnInitializedAsync() => Projects = await Administration.GetProjectsAsync();
     private static string ProjectColor(int order) => (order % 4) switch { 0 => "orange", 1 => "blue", 2 => "green", _ => "violet" };
     private static string HealthClass(string status) => status switch { "Healthy" => "healthy", "Unavailable" => "unavailable", _ => "unknown" };
+    private static string HealthText(string status) => status switch { "Healthy" => "Đang hoạt động", "Unavailable" => "Đang tắt", _ => "Chưa kiểm tra" };
 }

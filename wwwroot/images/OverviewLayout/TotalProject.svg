@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="128 108 768 808" role="img" aria-labelledby="title">
+  <title id="title">Biểu tượng ba lớp</title>
+  <defs>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#287dff" />
+      <stop offset="1" stop-color="#104cf2" />
+    </linearGradient>
+  </defs>
+
+  <rect x="128" y="108" width="768" height="808" rx="164" fill="url(#blue)" />
+
+  <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M326 404 492 303a39 39 0 0 1 40 0l166 101a39 39 0 0 1 0 67L532 572a39 39 0 0 1-40 0L326 471a39 39 0 0 1 0-67Z" stroke-width="38" />
+    <path d="m325 519 169 103a35 35 0 0 0 36 0l169-103" stroke-width="38" />
+    <path d="m325 614 169 103a35 35 0 0 0 36 0l169-103" stroke-width="38" />
+  </g>
+</svg>

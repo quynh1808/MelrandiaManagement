@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="40 40 880 880" role="img" aria-labelledby="title">
+	<title id="title">Cảnh báo hệ thống</title>
+	<rect x="40" y="40" width="880" height="880" rx="170" fill="#fac802" />
+	<g transform="translate(120 120) scale(.75)">
+		<path d="M40 800 480 40l440 760H40Zm138-80h604L480 200 178 720Zm330.5-51.5Q520 657 520 640t-11.5-28.5Q497 600 480 600t-28.5 11.5Q440 623 440 640t11.5 28.5Q463 680 480 680t28.5-11.5ZM440 560h80V360h-80v200Zm40-100Z" fill="#fa7a02" />
+	</g>
+</svg>
