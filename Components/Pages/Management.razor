@@ -30,7 +30,7 @@ else
                 <div><h2>Dự án</h2><p>Trạng thái health và điểm truy cập của từng hệ thống.</p></div>
                 <div class="management-toolbar-actions">
                     <label class="compact-select"><span class="sr-only">Lọc trạng thái</span><select data-management-status-filter><option value="all">All status</option><option value="healthy">Online</option><option value="unavailable">Offline</option><option value="unknown">Chưa kiểm tra</option></select></label>
-                    <a href="/Management/Projects">Xem tất cả →</a>
+                    <a class= "project-access-link" href="/Management/Projects"><span> Xem tất cả</span><img class="button-arrow" src="/images/right-arrow.svg" alt="" aria-hidden="true" /></a>
                 </div>
             </header>
             @if (Snapshot.Projects.Count == 0)
@@ -47,7 +47,7 @@ else
                             <div class="project-card-head"><span class="project-monogram @ProjectColor(project.DisplayOrder)">@project.ShortName</span><span class="health-pill @statusClass"><i></i>@HealthText(project.HealthStatus)</span></div>
                             <h3>@project.DisplayName</h3><p>@project.Description</p>
                             <div class="project-card-meta"><span>@project.LifecycleStatus</span><span>@project.GrantedUserCount tài khoản</span></div>
-                            <div class="project-card-footer"><small>@HealthAge(project.LastHealthCheckAtUtc)</small>@if (project.IsEnabled && !string.IsNullOrWhiteSpace(project.PublicUrl)){<a href="@project.PublicUrl">Mở dự án <b>→</b></a>}else{<span>Chưa khả dụng</span>}</div>
+                            <div class="project-card-footer"><small>@HealthAge(project.LastHealthCheckAtUtc)</small>@if (project.IsEnabled && !string.IsNullOrWhiteSpace(project.PublicUrl)){<a class= "project-access-link" href="@project.PublicUrl">Mở dự án <b>→</b></a>}else{<span>Chưa khả dụng</span>}</div>
                         </article>
                     }
                 </div>
@@ -57,16 +57,16 @@ else
 
         <aside class="management-side-column overview-side-column">
             <section class="management-panel activity-panel">
-                <header><h2>Recent activity</h2><a href="/Management/Reports">Xem tất cả</a></header>
+                <header><h2>Recent activity</h2><a class= "project-access-link" href="/Management/Reports">Xem tất cả</a></header>
                 @if (Snapshot.RecentActivity.Count == 0) { <p class="management-empty">Chưa có hoạt động quản trị.</p> }
                 else { <div class="activity-list">@foreach (var item in Snapshot.RecentActivity.Take(5)){<article><span>•</span><div><strong>@ActionText(item.Action)</strong><small>@item.Actor · @item.EntityType</small></div><time>@RelativeTime(item.TimestampUtc)</time></article>}</div> }
             </section>
             <section class="management-panel alert-overview-panel">
-                <header><h2>Alert Overview</h2><a href="/Management/Alerts">Chi tiết</a></header>
+                <header><h2>Alert Overview</h2><a class="project-access-link" href="/Management/Alerts">Chi tiết</a></header>
                 <div class="alert-overview-content"><div class="status-donut" style="--status-percent:@HealthyPercent"><span><strong>@Snapshot.TotalProjects</strong><small>Hệ thống</small></span></div><div class="status-legend"><span><i class="healthy"></i>Online <b>@Snapshot.HealthyProjects</b></span><span><i class="unavailable"></i>Offline <b>@UnavailableCount</b></span><span><i class="unknown"></i>Unknown <b>@UnknownCount</b></span></div></div>
             </section>
             <section class="management-panel system-overview-panel">
-                <header><h2>System overview</h2><a href="/Management/Systems">Kết nối</a></header>
+                <header><h2>System overview</h2><a class="project-access-link" href="/Management/Systems">Kết nối</a></header>
                 <div class="system-line"><span>Đang theo dõi</span><strong>@Snapshot.EnabledProjects / @Snapshot.TotalProjects</strong></div>
                 <div class="system-line"><span>Tài khoản</span><strong>@Snapshot.UserCount</strong></div>
                 <div class="system-line"><span>Phản hồi trung bình</span><strong>@AverageLatency</strong></div>

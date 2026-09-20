@@ -948,6 +948,17 @@ h1:focus-visible {
     bottom: 13%;
     animation: node-pulse 3s ease-in-out infinite;
 }
+.node-c {
+    top: 20%;
+    left: 50%;
+    animation: node-pulse 3s ease-in-out infinite;
+}
+.node-d {
+    right: 87%;
+    bottom: 13%;
+    animation: node-pulse 3s ease-in-out infinite;
+}
+
 
 .hero-copy,
 .hero-visual {
@@ -1079,8 +1090,8 @@ h1:focus-visible {
 }
 
 .fact-icon {
-    width: 28px;
-    height: 28px;
+    width: 40px;
+    height: 40px;
     object-fit: contain;
     flex-shrink: 0;
 }
@@ -1089,7 +1100,6 @@ h1:focus-visible {
     display: grid;
     gap: 2px;
 }
-
 .hero-facts>span:hover {
     transform: translateY(-3px);
     border-color: color-mix(in srgb, var(--forest) 40%, var(--line));
@@ -1104,7 +1114,7 @@ h1:focus-visible {
 
 .hero-facts small {
     color: var(--ink-soft);
-    font-size: 13px;
+    font-size: 16px;
 }
 
 .project-console {
@@ -1154,7 +1164,7 @@ h1:focus-visible {
     display: flex;
     align-items: center;
     gap: 10px;
-    font-size: 14px;
+    font-size: 20px;
     font-weight: 700;
 }
 
@@ -1170,7 +1180,7 @@ h1:focus-visible {
 .console-toolbar small,
 .console-status small {
     color: var(--ink-soft);
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .console-summary {
@@ -1193,7 +1203,7 @@ h1:focus-visible {
 .console-summary small {
     overflow: hidden;
     color: var(--ink-soft);
-    font-size: 11px;
+    font-size: 18px;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -1201,7 +1211,7 @@ h1:focus-visible {
 .console-summary strong {
     margin: 5px 0;
     color: var(--forest);
-    font-size: 24px;
+    font-size: 28px;
 }
 
 .console-project-list {
@@ -1241,7 +1251,7 @@ h1:focus-visible {
 }
 
 .console-project strong {
-    font-size: 16px;
+    font-size: 18px;
 }
 
 .console-project small {
@@ -1252,7 +1262,7 @@ h1:focus-visible {
 .console-project p {
     margin: 9px 0 13px;
     color: var(--ink-soft);
-    font-size: 13px;
+    font-size: 16px;
 }
 
 .progress-track {
@@ -1274,7 +1284,7 @@ h1:focus-visible {
     margin-top: 12px;
     justify-content: space-between;
     color: var(--ink-soft);
-    font-size: 11px;
+    font-size: 14px;
 }
 
 .console-project footer b {
@@ -2240,7 +2250,7 @@ h1:focus-visible {
     }
 
     .project-console {
-        border-radius: 18px;
+        border-radius: 20px;
         transform: none;
     }
 
@@ -2255,6 +2265,7 @@ h1:focus-visible {
 
     .console-summary small {
         grid-column: 1 / -1;
+        font-size: 14px;
     }
 
     .statement-section,
@@ -2796,6 +2807,12 @@ h1:focus-visible {
     gap: 9px;
     color: var(--primary);
     font-weight: 700;
+    transition: color 0.2s ease;
+}
+.management-public-link:hover{
+    color: var(--primary-strong);
+    text-decoration: underline;
+    transform: translateX(-1px);
 }
 
 .management-public-arrow {
@@ -2806,9 +2823,10 @@ h1:focus-visible {
     transition: transform .2s ease;
 }
 
-.management-public-link:hover .management-public-arrow {
+.management-public-arrow {
     transform: translateX(-3px);
 }
+
 
 .management-workspace {
     min-width: 0;
@@ -2952,6 +2970,16 @@ h1:focus-visible {
     box-shadow: 0 8px 20px rgba(36, 99, 235, .2);
     font-weight: 700;
     cursor: pointer;
+    text-decoration: none;
+
+    /* Bắt buộc để animation hoạt động mượt */
+    transition: transform 0.2s ease,
+                box-shadow 0.2s ease,
+                background 0.2s ease;
+}
+.management-primary-action:hover,
+.management-secondary-action:hover {
+    transform: translateY(-1px);
 }
 
 .project-modal {
@@ -4061,13 +4089,30 @@ h1:focus-visible {
 }
 
 .project-access-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     color: var(--primary);
     font-weight: 700;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.project-access-arrow {
+    width: 1em;
+    height: 1em;
+    display: block;
+    transition: transform 0.2s ease;
 }
 
 .project-access-link:hover {
     color: var(--primary-strong);
     text-decoration: underline;
+    transform: translateX(1px);
+}
+
+.project-access-link:hover .project-access-arrow {
+    transform: translateX(2px);
 }
 
 .project-access-unavailable {
