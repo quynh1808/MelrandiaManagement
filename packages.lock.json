@@ -10,8 +10,8 @@
       },
       "Microsoft.AspNetCore.App.Internal.Assets": {
         "type": "Direct",
-        "requested": "[10.0.10, )",
-        "resolved": "10.0.10",
+        "requested": "[10.0.11, )",
+        "resolved": "10.0.11",
         "contentHash": "8k0KoYKvNrSqP8E3oDJMBVKavlTEE6BacdLGtEDcxv9Hz0XxWFkD6JdLJsxXUlGeAfZ6YfvWmxKenl73qeCTSA=="
       },
       "Microsoft.AspNetCore.Identity.EntityFrameworkCore": {
