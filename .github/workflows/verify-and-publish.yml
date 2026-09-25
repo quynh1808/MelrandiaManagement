@@ -43,7 +43,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - run: dotnet restore MelrandiaManagement.csproj --force-evaluate
+      - run: dotnet restore MelrandiaManagement.csproj --force-evaluate --runtime linux-x64
       - name: Publish immutable OCI image to GHCR
         run: >-
           dotnet publish MelrandiaManagement.csproj
