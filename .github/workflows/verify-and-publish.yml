@@ -24,7 +24,7 @@ jobs:
       - name: Clear NuGet caches
         run: dotnet nuget locals all --clear
       - run: dotnet tool restore
-      - run: dotnet restore MelrandiaManagement.sln --locked-mode
+      - run: dotnet restore MelrandiaManagement.sln --force-evaluate
       - run: dotnet build MelrandiaManagement.sln --configuration Release --no-restore
       - run: dotnet test MelrandiaManagement.sln --configuration Release --no-build --no-restore
       - run: dotnet ef migrations has-pending-model-changes --context ManagementDbContext --no-build --configuration Release
