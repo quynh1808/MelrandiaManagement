@@ -21,6 +21,8 @@ jobs:
           cache-dependency-path: |
             packages.lock.json
             Tests/packages.lock.json
+      - name: Clear NuGet caches
+        run: dotnet nuget locals all --clear
       - run: dotnet tool restore
       - run: dotnet restore MelrandiaManagement.sln --locked-mode
       - run: dotnet build MelrandiaManagement.sln --configuration Release --no-restore
