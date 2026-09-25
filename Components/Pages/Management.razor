@@ -19,10 +19,10 @@ else
     <div class="management-overview-layout">
         <div class="management-overview-main">
             <section class="management-kpi-grid" aria-label="Chỉ số tổng quan">
-                <article><img class="kpi-icon blue" src="/images/OverviewLayout/TotalProject.svg" alt="" aria-hidden="true" /><div><small>Tổng dự án</small><strong>@Snapshot.TotalProjects</strong><em>Project Registry</em></div></article>
-                <article><img class="kpi-icon green" src="/images/OverviewLayout/TotalServices.svg" alt="" aria-hidden="true" /><div><small>Tổng kết nối</small><strong>@Snapshot.HealthyProjects</strong><em>Health check thành công</em></div></article>
-                <article><img class="kpi-icon orange" src="/images/OverviewLayout/Alerts.svg" alt="" aria-hidden="true" /><div><small>Cảnh báo hệ thống</small><strong>@UnavailableCount</strong><em>Dự án không phản hồi</em></div></article>
-                <article><img class="kpi-icon violet" src="/images/OverviewLayout/PendingTasks.svg" alt="" aria-hidden="true" /><div><small>Tasks đang thực hiện</small><strong>@PendingSetupCount</strong><em>Cấu hình dự án chưa đủ</em></div></article>
+                <article><img class="kpi-icon blue" src="/images/OverviewLayout/TotalProject.svg" alt="" aria-hidden="true" /><div><small>Tổng số Projects</small><strong>@Snapshot.TotalProjects</strong><em class="kpi-active-status"><span class="active-dot-pulsing">⦁</span> <span class="active-count">@Snapshot.HealthyProjects</span> <span class="active-label">Đang hoạt động</span></em></div></article>
+                <article><img class="kpi-icon green" src="/images/OverviewLayout/TotalServices.svg" alt="" aria-hidden="true" /><div><small>Tổng số Services</small><strong>0</strong><em class="kpi-active-status"><span class="active-dot-pulsing">⦁</span> <span class="active-count">0</span> <span class="active-label">Đang hoạt động</span></em></div></article>
+                <article><img class="kpi-icon orange" src="/images/OverviewLayout/Alerts.svg" alt="" aria-hidden="true" /><div><small>Cảnh báo hệ thống</small><strong>@UnavailableCount</strong><em class="kpi-active-status red"><span class="active-dot-pulsing">⦁</span> <span class="active-count">@UnavailableCount</span> <span class="active-label">Cần xử lý ngay</span></em></div></article>
+                <article><img class="kpi-icon violet" src="/images/Managements/Article.svg" alt="" aria-hidden="true" /><div><small>Tổng số bài viết</small><strong>20</strong><em class="kpi-active-status kpi-trend-status"><span class="active-count">↑15</span> <span class="trend-label">so với tháng trước</span></em></div></article>
             </section>
 
             <section class="management-panel project-board">
@@ -44,10 +44,91 @@ else
                     {
                         var statusClass = HealthClass(project.HealthStatus);
                         <article class="management-project-card" data-status="@statusClass" data-search-item="@($"{project.ShortName} {project.DisplayName} {project.ProjectKey}")">
-                            <div class="project-card-head"><span class="project-monogram @ProjectColor(project.DisplayOrder)">@project.ShortName</span><span class="health-pill @statusClass"><i></i>@HealthText(project.HealthStatus)</span></div>
-                            <h3>@project.DisplayName</h3><p>@project.Description</p>
-                            <div class="project-card-meta"><span>@project.LifecycleStatus</span><span>@project.GrantedUserCount tài khoản</span></div>
-                            <div class="project-card-footer"><small>@HealthAge(project.LastHealthCheckAtUtc)</small>@if (project.IsEnabled && !string.IsNullOrWhiteSpace(project.PublicUrl)){<a class= "project-access-link" href="@project.PublicUrl">Mở dự án <b>→</b></a>}else{<span>Chưa khả dụng</span>}</div>
+                            <div class="project-card-header-wrapper">
+                                <div class="project-card-identity">
+                                    <span class="project-monogram @ProjectColor(project.DisplayOrder)">@project.ShortName</span>
+                                    <div class="project-card-title-group">
+                                        <h3>@project.DisplayName</h3>
+                                        <p>@project.Description</p>
+                                    </div>
+                                </div>
+                                <span class="health-pill @statusClass"><i></i>@HealthText(project.HealthStatus)</span>
+                            </div>
+
+                            <div class="project-card-stats-grid">
+                                <!-- Row 1: Services | Ponds | Sensors -->
+                                <div class="project-stat-box">
+                                    <div class="project-stat-main">
+                                        <img class="project-stat-icon" src="/images/Managements/Services.svg" alt="" aria-hidden="true" />
+                                        <span>0 Services</span>
+                                    </div>
+                                    <div class="project-stat-sub">
+                                        <i class="dot-online">⦁</i> <span>0 Online</span>
+                                    </div>
+                                </div>
+
+                                <div class="project-stat-box">
+                                    <div class="project-stat-main">
+                                        <span class="project-stat-icon-emoji">🌊</span>
+                                        <span>0 Ponds</span>
+                                    </div>
+                                    <div class="project-stat-sub">
+                                        <i class="dot-online">⦁</i> <span>0 Online</span>
+                                    </div>
+                                </div>
+
+                                <div class="project-stat-box">
+                                    <div class="project-stat-main">
+                                        <span class="project-stat-icon-emoji">📡</span>
+                                        <span>0 Sensors</span>
+                                    </div>
+                                    <div class="project-stat-sub">
+                                        <i class="dot-online">⦁</i> <span>0 Online</span>
+                                    </div>
+                                </div>
+
+                                <!-- Row 2: Alerts | Tasks | Users -->
+                                <div class="project-stat-box">
+                                    <div class="project-stat-main">
+                                        <img class="project-stat-icon" src="/images/OverviewLayout/Alerts.svg" alt="" aria-hidden="true" />
+                                        <span>0 Alerts</span>
+                                    </div>
+                                    <div class="project-stat-sub red">
+                                        <i class="dot-online">⦁</i> <span>0 Warning</span>
+                                    </div>
+                                </div>
+
+                                <div class="project-stat-box">
+                                    <div class="project-stat-main">
+                                        <img class="project-stat-icon" src="/images/Managements/Tasks.svg" alt="" aria-hidden="true" />
+                                        <span>0 Tasks</span>
+                                    </div>
+                                    <div class="project-stat-sub blue">
+                                        <i class="dot-online">⦁</i> <span>0 Pending</span>
+                                    </div>
+                                </div>
+
+                                <div class="project-stat-box">
+                                    <div class="project-stat-main">
+                                        <img class="project-stat-icon" src="/images/Managements/User.svg" alt="" aria-hidden="true" />
+                                        <span>@project.GrantedUserCount Users</span>
+                                    </div>
+                                    <div class="project-stat-sub">
+                                        <i class="dot-online">⦁</i> <span>0 Online</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="project-card-footer">
+                                @if (project.IsEnabled && !string.IsNullOrWhiteSpace(project.PublicUrl))
+                                {
+                                    <a class="project-access-link" href="@project.PublicUrl">Mở dự án <b>→</b></a>
+                                }
+                                else
+                                {
+                                    <span class="project-access-unavailable">Chưa khả dụng</span>
+                                }
+                            </div>
                         </article>
                     }
                 </div>

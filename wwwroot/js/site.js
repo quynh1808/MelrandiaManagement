@@ -83,10 +83,28 @@
         if (dialog && !dialog.open) dialog.showModal();
     }
 
+    function toggleSidebar() {
+        const shell = document.querySelector(".management-shell");
+        if (!shell) return;
+        const isCollapsed = shell.classList.toggle("is-collapsed");
+        try { localStorage.setItem("melrandia-sidebar-collapsed", isCollapsed ? "true" : "false"); } catch { }
+    }
+
+    function restoreSidebarState() {
+        const shell = document.querySelector(".management-shell");
+        if (!shell) return;
+        try {
+            if (localStorage.getItem("melrandia-sidebar-collapsed") === "true") {
+                shell.classList.add("is-collapsed");
+            }
+        } catch { }
+    }
+
     function initializePage() {
         closeMobileMenu();
         closeDropdowns();
         restoreSavedTheme();
+        restoreSidebarState();
         if (window.location.hash === "#new-project") openProjectModal();
         if (window.location.hash) {
             const target = document.getElementById(window.location.hash.slice(1));
@@ -177,6 +195,12 @@
             input.type = reveal ? "text" : "password";
             passwordButton.setAttribute("aria-label", reveal ? "Ẩn mật khẩu" : "Hiện mật khẩu");
             passwordButton.setAttribute("aria-pressed", reveal ? "true" : "false");
+            return;
+        }
+
+        const sidebarToggleBtn = event.target.closest("[data-sidebar-toggle]");
+        if (sidebarToggleBtn) {
+            toggleSidebar();
             return;
         }
 

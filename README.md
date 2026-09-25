@@ -100,3 +100,7 @@ Mở `http://localhost:5106/login`. Đăng nhập bằng username `admin` và pa
 10. [Hệ thống biên soạn và xuất bản bài viết](Docs/10.ARTICLE-PUBLISHING.md)
 
 Không commit `.env`, password, token GHCR, private key hoặc certificate. `.env.example` chỉ là mẫu tên biến và bắt buộc thay toàn bộ placeholder trước khi chạy.
+
+
+
+command run: dotnet run --PostgreSql:Password=password for SQL

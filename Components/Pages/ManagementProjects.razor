@@ -14,7 +14,7 @@
 @if (!string.IsNullOrWhiteSpace(Error)) { <div class="form-notice error">@Error</div> }
 
 <section class="management-kpi-grid">
-    <article><span class="kpi-icon blue">▱</span><div><small>Tổng dự án</small><strong>@Projects.Count</strong><em>Project Registry</em></div></article>
+    <article><span class="kpi-icon blue">▱</span><div><small>Tổng số Projects</small><strong>@Projects.Count</strong><em class="kpi-active-status"><span class="active-dot-pulsing">⦁</span> <span class="active-count">@Projects.Count(x => x.LifecycleStatus == "Active")</span> <span class="active-label">Đang hoạt động</span></em></div></article>
     <article><span class="kpi-icon green">●</span><div><small>Đang hoạt động</small><strong>@Projects.Count(x => x.LifecycleStatus == "Active")</strong><em>Đang vận hành</em></div></article>
     <article><span class="kpi-icon orange">◴</span><div><small>Đang thực hiện</small><strong>@Projects.Count(x => x.LifecycleStatus == "Planned")</strong><em>Đang chuẩn bị</em></div></article>
     <article><span class="kpi-icon violet">✓</span><div><small>Trạng thái</small><strong>@Projects.Count(x => x.HealthStatus == "Healthy")</strong><em>Health thành công</em></div></article>
