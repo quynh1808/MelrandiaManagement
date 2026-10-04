@@ -2,6 +2,7 @@
 @attribute [Authorize(Policy = "ManagePortal")]
 @layout ManagementLayout
 @inject PortalAdministrationService Administration
+@inject ArticleAdministrationService ArticlesService
 
 <PageTitle>Tổng quan · Melrandia</PageTitle>
 
@@ -19,10 +20,32 @@ else
     <div class="management-overview-layout">
         <div class="management-overview-main">
             <section class="management-kpi-grid" aria-label="Chỉ số tổng quan">
-                <article><img class="kpi-icon blue" src="/images/OverviewLayout/TotalProject.svg" alt="" aria-hidden="true" /><div><small>Tổng số Projects</small><strong>@Snapshot.TotalProjects</strong><em class="kpi-active-status"><span class="active-dot-pulsing">⦁</span> <span class="active-count">@Snapshot.HealthyProjects</span> <span class="active-label">Đang hoạt động</span></em></div></article>
+                <article><img class="kpi-icon blue" src="/images/OverviewLayout/TotalProject.svg" alt="" aria-hidden="true" /><div><small>Tổng số Projects</small><strong>@Snapshot.TotalProjects</strong><em class="kpi-active-status @(Snapshot.HealthyProjects == 0 ? "inactive" : "")">
+                    @if (Snapshot.HealthyProjects == 0)
+                    {
+                        <span class="inactive-dot">⦁</span><span class="inactive-label">Không có dự án hoạt động</span>
+                    }
+                    else
+                    {
+                        <span class="active-dot-pulsing">⦁</span> <span class="active-count">@Snapshot.HealthyProjects</span> <span class="active-label">Đang hoạt động</span>
+                    }
+                </em></div></article>
                 <article><img class="kpi-icon green" src="/images/OverviewLayout/TotalServices.svg" alt="" aria-hidden="true" /><div><small>Tổng số Services</small><strong>0</strong><em class="kpi-active-status"><span class="active-dot-pulsing">⦁</span> <span class="active-count">0</span> <span class="active-label">Đang hoạt động</span></em></div></article>
                 <article><img class="kpi-icon orange" src="/images/OverviewLayout/Alerts.svg" alt="" aria-hidden="true" /><div><small>Cảnh báo hệ thống</small><strong>@UnavailableCount</strong><em class="kpi-active-status red"><span class="active-dot-pulsing">⦁</span> <span class="active-count">@UnavailableCount</span> <span class="active-label">Cần xử lý ngay</span></em></div></article>
-                <article><img class="kpi-icon violet" src="/images/Managements/Article.svg" alt="" aria-hidden="true" /><div><small>Tổng số bài viết</small><strong>20</strong><em class="kpi-active-status kpi-trend-status"><span class="active-count">↑15</span> <span class="trend-label">so với tháng trước</span></em></div></article>
+                <article><img class="kpi-icon violet" src="/images/Managements/Article.svg" alt="" aria-hidden="true" /><div><small>Tổng số bài viết</small><strong>@ArticleCount</strong><em class="kpi-active-status kpi-trend-status @(ArticleChange > 0 ? "trend-up" : ArticleChange < 0 ? "trend-down" : "trend-neutral")">
+                    @if (ArticleChange > 0)
+                    {
+                        <span class="material-symbols-outlined trend-arrow" aria-hidden="true">arrow_upward</span><span class="active-count">@ArticleChange</span><span class="trend-label">so với tháng trước</span>
+                    }
+                    else if (ArticleChange < 0)
+                    {
+                        <span class="material-symbols-outlined trend-arrow" aria-hidden="true">arrow_downward</span><span class="active-count">@Math.Abs(ArticleChange)</span><span class="trend-label">so với tháng trước</span>
+                    }
+                    else
+                    {
+                        <span class="trend-label">⦁ Không đổi so với tháng trước</span>
+                    }
+                </em></div></article>
             </section>
 
             <section class="management-panel project-board">
@@ -30,7 +53,7 @@ else
                 <div><h2>Dự án</h2><p>Trạng thái health và điểm truy cập của từng hệ thống.</p></div>
                 <div class="management-toolbar-actions">
                     <label class="compact-select"><span class="sr-only">Lọc trạng thái</span><select data-management-status-filter><option value="all">All status</option><option value="healthy">Online</option><option value="unavailable">Offline</option><option value="unknown">Chưa kiểm tra</option></select></label>
-                    <a class= "project-access-link" href="/Management/Projects"><span> Xem tất cả</span><img class="button-arrow" src="/images/right-arrow.svg" alt="" aria-hidden="true" /></a>
+                    <a class="project-access-link has-arrow" href="/Management/Projects"><span class="project-access-label">Xem tất cả</span><span class="material-symbols-outlined project-access-arrow" aria-hidden="true">arrow_right_alt</span></a>
                 </div>
             </header>
             @if (Snapshot.Projects.Count == 0)
@@ -122,7 +145,7 @@ else
                             <div class="project-card-footer">
                                 @if (project.IsEnabled && !string.IsNullOrWhiteSpace(project.PublicUrl))
                                 {
-                                    <a class="project-access-link" href="@project.PublicUrl">Mở dự án <b>→</b></a>
+                                    <a class="project-access-link has-arrow" href="@project.PublicUrl"><span class="project-access-label">Mở dự án</span><span class="material-symbols-outlined project-access-arrow" aria-hidden="true">arrow_right_alt</span></a>
                                 }
                                 else
                                 {
@@ -159,13 +182,23 @@ else
 
 @code {
     private ManagementDashboardSnapshot? Snapshot { get; set; }
+    private ArticleCountTrend? ArticleTrend { get; set; }
+    private int ArticleCount => ArticleTrend?.TotalCount ?? 0;
+    private int ArticleChange => ArticleTrend?.MonthOverMonthChange ?? 0;
     private int UnavailableCount => Snapshot?.Projects.Count(x => x.HealthStatus == "Unavailable") ?? 0;
     private int UnknownCount => Snapshot?.Projects.Count(x => x.HealthStatus != "Healthy" && x.HealthStatus != "Unavailable") ?? 0;
     private int PendingSetupCount => Snapshot?.Projects.Count(x => string.IsNullOrWhiteSpace(x.PublicUrl) || string.IsNullOrWhiteSpace(x.HealthUrl) || !x.IsEnabled) ?? 0;
     private int HealthyPercent => Snapshot is null || Snapshot.TotalProjects == 0 ? 0 : (int)Math.Round(Snapshot.HealthyProjects * 100d / Snapshot.TotalProjects);
     private bool AllOperational => Snapshot is { TotalProjects: > 0 } && Snapshot.EnabledProjects == Snapshot.TotalProjects && Snapshot.HealthyProjects == Snapshot.TotalProjects;
     private string AverageLatency { get { var values = Snapshot?.Projects.Where(x => x.LastResponseMilliseconds.HasValue).Select(x => x.LastResponseMilliseconds!.Value).ToArray() ?? []; return values.Length == 0 ? "Chưa có dữ liệu" : $"{Math.Round(values.Average())} ms"; } }
-    protected override async Task OnInitializedAsync() => Snapshot = await Administration.GetDashboardAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        var dashboardTask = Administration.GetDashboardAsync();
+        var articleTrendTask = ArticlesService.GetCountTrendAsync();
+        await Task.WhenAll(dashboardTask, articleTrendTask);
+        Snapshot = await dashboardTask;
+        ArticleTrend = await articleTrendTask;
+    }
     private static string ProjectColor(int order) => (order % 4) switch { 0 => "orange", 1 => "blue", 2 => "green", _ => "violet" };
     private static string HealthClass(string status) => status switch { "Healthy" => "healthy", "Unavailable" => "unavailable", _ => "unknown" };
     private static string HealthText(string status) => status switch { "Healthy" => "Online", "Unavailable" => "Offline", _ => "Chưa kiểm tra" };

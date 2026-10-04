@@ -15,29 +15,29 @@
         <h1>Kết nối ý tưởng<br />với <em>thế giới thực.</em></h1>
         <p>Melrandia là không gian phát triển và quản lý các dự án Internet of Things độc lập, hướng dữ liệu quan sát được thành những hành động có giá trị trong thực tế.</p>
         <div class="hero-actions">
-            <a class="button button-primary" href="#featured-projects">Khám phá dự án <img class="button-arrow" src="/images/arrow-right.svg" alt="" aria-hidden="true" /></a>
-            <a class="button button-secondary" href="/gioi-thieu">Tìm hiểu thêm <span aria-hidden="true"></span></a>
+            <a class="button button-primary" href="#featured-projects">Khám phá dự án <span class="material-symbols-outlined button-arrow" aria-hidden="true">arrow_right_alt</span></a>
+            <a class="button button-secondary" href="/gioi-thieu">Tìm hiểu thêm <span class="material-symbols-outlined button-arrow" aria-hidden="true">arrow_right_alt</span></a>
         </div>
         <div class="hero-facts" aria-label="Thông tin chính">
             <span>
                 <img class="fact-icon" src="/images/PublicHome/ProjectsDone.svg" alt="" aria-hidden="true" />
                 <div class="fact-copy">
-                    <strong>01</strong>
                     <small>Dự án đang hoạt động</small>
+                    <strong>01</strong>
                 </div>
             </span>
             <span>
                 <img class="fact-icon" src="/images/PublicHome/Devices.svg" alt=""aria-hidden="true"/>
                 <div class="fact-copy">
-                    <strong>05</strong>
                     <small>Thiết bị giám sát</small>
+                    <strong>05</strong>
                 </div>
             </span>
             <span>
                 <img class="fact-icon" src="/images/PublicHome/AveragePerformance.svg" alt=""aria-hidden="true"/>
                 <div class="fact-copy">
-                    <strong>91.2%</strong>
                     <small>Hiệu suất trung bình</small>
+                    <strong>91.2%</strong>
                 </div>
             </span>
         </div>
@@ -55,14 +55,14 @@
     </div>
     <div class="statement-copy">
         <p>Melrandia tập hợp các dự án trong lĩnh vực giám sát, tự động hóa và Internet of Things mà không buộc chúng phải dùng chung source code hoặc vòng đời phát hành.</p>
-        <a class="text-link" href="/gioi-thieu">Xem trang giới thiệu <span aria-hidden="true">→</span></a>
+        <a class="text-link" href="/gioi-thieu">Xem trang giới thiệu <span class="material-symbols-outlined" aria-hidden="true">arrow_right_alt</span></a>
     </div>
 </section>
 
 <section id="featured-projects" class="content-section projects-section">
     <div class="section-heading reveal">
         <div><span class="eyebrow">Dự án nổi bật</span><h2>Mỗi dự án giải quyết một bài toán riêng.</h2></div>
-        <a class="text-link" href="/du-an">Xem tất cả dự án <span aria-hidden="true">→</span></a>
+        <a class="text-link" href="/du-an">Xem tất cả dự án <span class="material-symbols-outlined" aria-hidden="true">arrow_right_alt</span></a>
     </div>
     <div class="project-grid">
         @foreach (var project in FeaturedProjects)
@@ -94,7 +94,7 @@
 <section class="content-section articles-section">
     <div class="section-heading reveal">
         <div><span class="eyebrow">Góc phát triển</span><h2>Bài viết và cập nhật.</h2></div>
-        <a class="text-link" href="/bai-viet">Đến trang bài viết <span aria-hidden="true">→</span></a>
+        <a class="text-link" href="/bai-viet">Đến trang bài viết <span class="material-symbols-outlined" aria-hidden="true">arrow_right_alt</span></a>
     </div>
     @if (RecentArticles.Count == 0)
     {
@@ -122,7 +122,7 @@
                         <small>@article.CategoryName · @article.PublishedAtUtc.ToLocalTime().ToString("dd/MM/yyyy")</small>
                         <h2>@article.Title</h2>
                         <p>@article.Summary</p>
-                        <strong>Đọc bài viết →</strong>
+                        <strong>Đọc bài viết <span class="material-symbols-outlined" aria-hidden="true">arrow_right_alt</span></strong>
                     </div>
                 </a>
             }

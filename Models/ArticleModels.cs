@@ -70,6 +70,8 @@ public sealed record ArticleAdminSummary(Guid Id, string Slug, string Title, str
 public sealed record ArticleAdminSnapshot(IReadOnlyList<PortalArticleCategory> Categories,
     IReadOnlyList<ArticleAdminSummary> Articles);
 
+public sealed record ArticleCountTrend(int TotalCount, int MonthOverMonthChange);
+
 public sealed record ArticleAdminDetail(Guid Id, Guid CategoryId, string Slug, string Title,
     string Summary, string ContentMarkdown, string Status, DateTime? PublishedAtUtc,
     string AuthorName, IReadOnlyList<PortalArticleMedia> Media, int Version);

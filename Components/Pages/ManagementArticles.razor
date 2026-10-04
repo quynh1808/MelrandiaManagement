@@ -5,8 +5,10 @@
 
 <PageTitle>Bài viết · Melrandia</PageTitle>
 
-<section class="management-page-heading compact"><div><h1>Bài viết</h1><p>Soạn thảo, xuất bản và quản lý hình ảnh của nội dung công khai.</p></div><a class="management-primary-action" href="#new-article">＋ Thêm bài viết</a></section>
-@if (!string.IsNullOrWhiteSpace(Status)) { <div class="form-notice success">Đã lưu bài viết và cập nhật Public Article Catalog.</div> }
+<section class="management-page-heading compact"><div><h1>Bài viết</h1><p>Soạn thảo, xuất bản và quản lý hình ảnh của nội dung công khai.</p></div><a class="management-primary-action" href="/Management/Articles/New">＋ Thêm bài viết</a></section>
+@if (Status == "deleted") { <div class="form-notice success">Đã xóa bài viết.</div> }
+else if (Status == "duplicated") { <div class="form-notice success">Đã tạo bản nháp sao chép.</div> }
+else if (Status == "saved") { <div class="form-notice success">Đã lưu bài viết và cập nhật Public Article Catalog.</div> }
 @if (!string.IsNullOrWhiteSpace(Error)) { <div class="form-notice error">@Error</div> }
 
 <section class="management-kpi-grid">
@@ -16,37 +18,60 @@
     <article><span class="kpi-icon violet">▣</span><div><small>Hình ảnh</small><strong>@Snapshot.Articles.Sum(x => x.MediaCount)</strong><em>Persistent volume</em></div></article>
 </section>
 
-<section id="new-article" class="article-editor-layout">
-    <form class="management-panel article-editor-form portal-form" method="post" action="/management/articles/save" enctype="multipart/form-data" onsubmit="return confirm('Bạn có chắc chắn muốn lưu bài viết với trạng thái đã chọn?');">
-        <AntiforgeryToken /><input type="hidden" name="version" value="1" />
-        <header><div><h2>Thêm bài viết</h2><p>Nội dung gốc dùng Markdown; HTML nhập trực tiếp sẽ không được thực thi.</p></div></header>
-        <div class="article-editor-fields">
-            <label><span>Tiêu đề</span><input name="title" data-article-title minlength="5" maxlength="240" placeholder="Nhập tiêu đề bài viết" required /></label>
-            <div class="form-grid two"><label><span>Slug</span><input name="slug" data-article-slug pattern="[a-z0-9-]+" maxlength="160" placeholder="tu-dong-tao-tu-tieu-de" required /></label><label><span>Chuyên mục</span><select name="categoryId" required>@foreach (var category in Snapshot.Categories){<option value="@category.Id">@category.DisplayName</option>}</select></label></div>
-            <label><span>Mô tả ngắn</span><textarea name="summary" minlength="20" maxlength="700" rows="3" required></textarea></label>
-            <label><span>Nội dung Markdown</span><textarea class="markdown-editor" name="contentMarkdown" minlength="50" maxlength="200000" rows="18" placeholder="# Tiêu đề mục&#10;&#10;Nội dung bài viết..." required></textarea><small class="field-help">Hỗ trợ heading, danh sách, bảng, trích dẫn, liên kết HTTP/HTTPS và code block. Raw HTML bị vô hiệu hóa.</small></label>
-        </div>
-        <aside class="article-publish-panel">
-            <label><span>Trạng thái</span><select name="status"><option value="Draft">Draft</option><option value="Published">Published</option><option value="Scheduled">Scheduled</option><option value="Archived">Archived</option></select></label>
-            <label><span>Xuất bản/Hẹn giờ UTC</span><input name="publishedAtUtc" type="datetime-local" /><small class="field-help">Bắt buộc khi chọn Scheduled.</small></label>
-            <label><span>Ảnh đại diện</span><input name="cover" type="file" accept="image/jpeg,image/png,image/gif,image/webp" /></label>
-            <label><span>Alt text ảnh đại diện</span><input name="coverAlt" maxlength="300" placeholder="Mô tả nội dung hình ảnh" /></label>
-            <label><span>Gallery</span><input name="gallery" type="file" accept="image/jpeg,image/png,image/gif,image/webp" multiple /><small class="field-help">JPEG, PNG, GIF, WebP; tối đa theo cấu hình server.</small></label>
-            <button class="management-primary-action" type="submit">Lưu bài viết</button>
-        </aside>
-    </form>
-</section>
-
-<section class="management-panel article-registry-panel"><header class="panel-toolbar"><div><h2>Thư viện bài viết</h2><p>Chỉnh sửa sẽ tăng Version để phát hiện hai phiên ghi đè nhau.</p></div><label class="compact-select"><select data-management-status-filter aria-label="Lọc trạng thái"><option value="all">All status</option><option value="published">Published</option><option value="draft">Draft</option><option value="scheduled">Scheduled</option><option value="archived">Archived</option></select></label></header>
-    <div class="article-admin-list">
-        @foreach (var article in Snapshot.Articles)
-        {
-            <details id="article-@article.Id" data-status="@article.Status.ToLowerInvariant()" data-search-item="@($"{article.Title} {article.Slug} {article.CategoryName}")">
-                <summary>@if (!string.IsNullOrWhiteSpace(article.CoverUrl)){<img src="@article.CoverUrl" alt="" loading="lazy" />}else{<span class="article-admin-placeholder">✎</span>}<span><strong>@article.Title</strong><small>@article.CategoryName · @article.AuthorName · cập nhật @article.UpdatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small></span><span class="article-status @article.Status.ToLowerInvariant()">@article.Status</span><b>@article.MediaCount ảnh</b></summary>
-                <EditArticleForm ArticleId="article.Id" Categories="Snapshot.Categories" />
-            </details>
-        }
-        @if (Snapshot.Articles.Count == 0) { <div class="management-empty-state compact"><span>✎</span><h3>Chưa có bài viết</h3><p>Dùng form phía trên để tạo bản nháp đầu tiên.</p></div> }
+<section class="management-panel article-registry-panel">
+    <header class="panel-toolbar">
+        <div><h2>Bài viết của tôi</h2><p>Quản lý, chỉnh sửa và theo dõi hiệu suất các bài viết blog.</p></div>
+        <label class="compact-select"><select data-management-status-filter aria-label="Lọc trạng thái"><option value="all">Tất cả trạng thái</option><option value="published">Công khai</option><option value="draft">Bản nháp</option><option value="scheduled">Đã lên lịch</option><option value="archived">Lưu trữ</option></select></label>
+    </header>
+    <div class="management-table-wrap">
+        <table class="management-table article-management-table">
+            <thead><tr><th>Bài viết</th><th>Chuyên mục</th><th>Trạng thái</th><th>Ảnh</th><th>Ngày cập nhật</th><th class="text-end">Thao tác</th></tr></thead>
+            <tbody>
+                @foreach (var article in Snapshot.Articles)
+                {
+                    var statusClass = article.Status.ToLowerInvariant();
+                    <tr data-status="@statusClass" data-search-item="@($"{article.Title} {article.Slug} {article.CategoryName}")">
+                        <td>
+                            <a class="article-table-identity" href="@($"/Management/Articles/Edit/{article.Id}")">
+                                @if (!string.IsNullOrWhiteSpace(article.CoverUrl))
+                                {
+                                    <img src="@article.CoverUrl" alt="" loading="lazy" />
+                                }
+                                else
+                                {
+                                    <span class="article-admin-placeholder">✎</span>
+                                }
+                                <span><strong>@article.Title</strong><small>/bai-viet/@article.Slug</small></span>
+                            </a>
+                        </td>
+                        <td>@article.CategoryName</td>
+                        <td><span class="article-status @statusClass">@StatusLabel(article.Status)</span></td>
+                        <td>@article.MediaCount</td>
+                        <td>@article.UpdatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                        <td class="text-end">
+                            <div class="article-row-actions">
+                                <a class="article-icon-action" href="@($"/Management/Articles/Preview/{article.Id}")" title="Xem trước" aria-label="Xem trước"><i class="bi bi-eye"></i></a>
+                                <a class="article-icon-action edit" href="@($"/Management/Articles/Edit/{article.Id}")" title="Chỉnh sửa bài viết" aria-label="Chỉnh sửa"><i class="bi bi-pencil-square"></i></a>
+                                <form method="post" action="/management/articles/duplicate">
+                                    <AntiforgeryToken />
+                                    <input type="hidden" name="articleId" value="@article.Id" />
+                                    <button class="article-icon-action" type="submit" title="Nhân bản bài viết" aria-label="Nhân bản"><i class="bi bi-copy"></i></button>
+                                </form>
+                                <form method="post" action="/management/articles/delete" onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài viết &quot;@article.Title&quot;? Thao tác này không thể hoàn tác.');">
+                                    <AntiforgeryToken />
+                                    <input type="hidden" name="articleId" value="@article.Id" />
+                                    <button class="article-icon-action delete" type="submit" title="Xóa bài viết" aria-label="Xóa bài viết"><i class="bi bi-trash3"></i></button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                @if (Snapshot.Articles.Count == 0)
+                {
+                    <tr><td colspan="6"><div class="management-empty-state compact"><span>✎</span><h3>Chưa có bài viết</h3><p>Dùng trang Thêm bài viết để tạo bản nháp đầu tiên.</p></div></td></tr>
+                }
+            </tbody>
+        </table>
     </div>
 </section>
 
@@ -56,5 +81,13 @@
     private ArticleAdminSnapshot Snapshot { get; set; } = new([], []);
     private int DraftAndScheduled => Count(PortalArticleStatuses.Draft) + Count(PortalArticleStatuses.Scheduled);
     private int Count(string status) => Snapshot.Articles.Count(x => x.Status == status);
+    private static string StatusLabel(string status) => status switch
+    {
+        PortalArticleStatuses.Published => "Công khai",
+        PortalArticleStatuses.Draft => "Bản nháp",
+        PortalArticleStatuses.Scheduled => "Đã lên lịch",
+        PortalArticleStatuses.Archived => "Lưu trữ",
+        _ => status
+    };
     protected override async Task OnInitializedAsync() => Snapshot = await ArticlesService.GetSnapshotAsync();
 }

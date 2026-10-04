@@ -20,7 +20,7 @@
         <section class="management-panel task-column"><header><h2><i class="@column.Class"></i>@column.Label</h2><span>@Tasks.Count(x => x.State == column.State)</span></header><div class="task-list">
             @foreach (var task in Tasks.Where(x => x.State == column.State))
             {
-                <article data-search-item="@($"{task.Title} {task.Project}")"><span class="task-type-icon">@task.Icon</span><h3>@task.Title</h3><p>@task.Project</p><small>@task.Detail</small><a href="/Management/Projects">Mở Project Registry →</a></article>
+                <article data-search-item="@($"{task.Title} {task.Project}")"><span class="task-type-icon">@task.Icon</span><h3>@task.Title</h3><p>@task.Project</p><small>@task.Detail</small><a href="/Management/Projects">Mở Project Registry <span class="material-symbols-outlined" aria-hidden="true">arrow_right_alt</span></a></article>
             }
             @if (!Tasks.Any(x => x.State == column.State)) { <p class="management-empty">Không có nhiệm vụ.</p> }
         </div></section>

@@ -4,7 +4,7 @@
 @if (Article is null)
 {
     <PageTitle>Không tìm thấy bài viết · Melrandia</PageTitle>
-    <section class="simple-page status-page"><span class="page-kicker">Bài viết</span><h1>Bài viết không tồn tại hoặc chưa được xuất bản.</h1><a class="text-link" href="/bai-viet">Xem các bài viết khác →</a></section>
+    <section class="simple-page status-page"><span class="page-kicker">Bài viết</span><h1>Bài viết không tồn tại hoặc chưa được xuất bản.</h1><a class="text-link" href="/bai-viet">Xem các bài viết khác <span class="material-symbols-outlined" aria-hidden="true">arrow_right_alt</span></a></section>
 }
 else
 {
@@ -14,7 +14,7 @@ else
         @if (!string.IsNullOrWhiteSpace(Article.CoverUrl)) { <img class="article-detail-cover" src="@Article.CoverUrl" alt="@Article.CoverAlt" /> }
         <section class="article-markdown">@((MarkupString)Article.ContentHtml)</section>
         @if (Article.Gallery.Count > 0) { <section class="article-gallery" aria-label="Hình ảnh bài viết">@foreach (var media in Article.Gallery){<figure><img src="@media.PublicUrl" alt="@media.AltText" loading="lazy" />@if (!string.IsNullOrWhiteSpace(media.Caption)){<figcaption>@media.Caption</figcaption>}</figure>}</section> }
-        <footer><a class="text-link" href="@($"/bai-viet/{Article.CategorySlug}")">← Xem thêm trong @Article.CategoryName</a></footer>
+        <footer><a class="text-link" href="@($"/bai-viet/{Article.CategorySlug}")"><span class="material-symbols-outlined" aria-hidden="true">arrow_left_alt</span>Xem thêm trong @Article.CategoryName</a></footer>
     </article>
 }
 

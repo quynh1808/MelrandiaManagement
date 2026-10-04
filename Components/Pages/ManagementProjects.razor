@@ -71,7 +71,7 @@
                     <td>@(project.LastResponseMilliseconds.HasValue ? $"{project.LastResponseMilliseconds}ms" : "10ms")</td>
                     <td>
                         <div class="project-row-actions">
-                            @if (!string.IsNullOrWhiteSpace(project.PublicUrl)){<a class="project-access-link" href="@project.PublicUrl" target="_blank" rel="noopener noreferrer">Truy cập dự án →</a>}else{<span class="project-access-unavailable">Chưa khả dụng</span>}
+                            @if (!string.IsNullOrWhiteSpace(project.PublicUrl)){<a class="project-access-link has-arrow" href="@project.PublicUrl" target="_blank" rel="noopener noreferrer"><span class="project-access-label">Truy cập dự án</span><span class="material-symbols-outlined project-access-arrow" aria-hidden="true">arrow_right_alt</span></a>}else{<span class="project-access-unavailable">Chưa khả dụng</span>}
                             <details class="project-actions-menu">
                                 <summary aria-label="Mở thao tác dự án">⋮</summary>
                                 <div><button type="button">Chỉnh sửa dự án</button></div>

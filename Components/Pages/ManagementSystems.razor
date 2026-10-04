@@ -25,7 +25,7 @@
         {
             <tr data-status="@HealthClass(project.HealthStatus)" data-search-item="@($"{project.DisplayName} {project.ProjectKey} {project.PublicUrl} {project.HealthUrl}")">
                 <td><span class="table-identity"><span class="project-monogram mini @ProjectColor(project.DisplayOrder)">@project.ShortName</span><span><strong>@project.DisplayName</strong><small>@project.ProjectKey</small></span></span></td>
-                <td>Application</td><td><span class="network-address">@DisplayHost(project.PublicUrl)</span></td><td><span class="health-pill @HealthClass(project.HealthStatus)"><i></i>@project.HealthStatus</span></td><td><span class="endpoint-text">@Empty(project.HealthUrl)</span></td><td>@(project.LastResponseMilliseconds is null ? "—" : $"{project.LastResponseMilliseconds} ms")</td><td>@FormatDate(project.LastHealthCheckAtUtc)</td><td><a class="table-action" href="/Management/Projects#project-@project.Id">Sửa</a></td>
+                <td>Application</td><td><span class="network-address">@DisplayHost(project.PublicUrl)</span></td><td><span class="health-pill @HealthClass(project.HealthStatus)"><i></i>@project.HealthStatus</span></td><td><span class="endpoint-text">@Empty(project.HealthUrl)</span></td><td>@(project.LastResponseMilliseconds is null ? "—" : $"{project.LastResponseMilliseconds} ms")</td><td><span class="health-check-date">@FormatDate(project.LastHealthCheckAtUtc)</span></td><td><a class="table-action" href="/Management/Projects#project-@project.Id">Sửa</a></td>
             </tr>
         }
     </tbody></table></div>

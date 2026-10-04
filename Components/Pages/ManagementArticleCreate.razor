@@ -1,0 +1,294 @@
+@page "/Management/Articles/New"
+@attribute [Authorize(Policy = "ManagePortal")]
+@layout ManagementLayout
+@inject ArticleAdministrationService ArticlesService
+@inject ArticleMarkdownRenderer MarkdownRenderer
+
+<PageTitle>Thêm Bài viết · Melrandia</PageTitle>
+
+<div class="post-editor-container">
+    <!-- Top Bar: Header Title with Quote & Live Preview Toggle -->
+    <div class="post-editor-topbar">
+        <div class="post-editor-header">
+            <h1 class="post-editor-title">Thêm Bài viết</h1>
+            <p class="post-editor-quote">
+                <span class="post-editor-quote-text">“A good book is a dream that you hold in your hands.”</span>
+                <span class="post-editor-quote-author">— Neil Gaiman</span>
+            </p>
+        </div>
+        <div class="post-editor-mode-nav" role="group" aria-label="Chế độ soạn thảo bài viết">
+            <button class="post-editor-mode-btn @(!PreviewMode ? "active" : "")" type="button" @onclick="() => PreviewMode = false">
+                <i class="bi bi-pencil-square"></i>
+                <span>Soạn thảo</span>
+            </button>
+            <button class="post-editor-mode-btn @(PreviewMode ? "active" : "")" type="button" @onclick="() => PreviewMode = true">
+                <i class="bi bi-eye"></i>
+                <span>Xem trước</span>
+            </button>
+        </div>
+    </div>
+
+    <form id="article-create-form" class="portal-form" method="post" action="/management/articles/save" enctype="multipart/form-data" onsubmit="return confirm('Bạn có chắc chắn muốn lưu bài viết với trạng thái đã chọn?');">
+        <AntiforgeryToken />
+        <input type="hidden" name="version" value="1" />
+
+        <div class="row g-4 align-items-start">
+            <!-- Left Column: Title, Slug, Rich Text Markdown Editor, Summary (col-lg-8) -->
+            <div class="col-lg-8">
+                <!-- Card 1: Title Input -->
+                <div class="post-editor-card">
+                    <input class="post-editor-title-input" name="title" data-article-title minlength="5" maxlength="240" placeholder="Nhập tiêu đề bài viết..." required @bind="Title" @bind:event="oninput" />
+                </div>
+
+                <!-- Card 2: Friendly URL / Slug -->
+                <div class="post-editor-card post-editor-slug-card">
+                    <div class="post-editor-slug-lead">
+                        <span class="post-editor-card-badge"><i class="bi bi-link-45deg"></i></span>
+                        <span class="post-editor-slug-label">URL thân thiện:</span>
+                        <span class="post-editor-slug-prefix">/bai-viet/</span>
+                        <input class="post-editor-slug-input" name="slug" data-article-slug pattern="[a-z0-9-]+" maxlength="160" placeholder="tieu-de-bai-viet" required @bind="Slug" @bind:event="oninput" />
+                    </div>
+                    <button class="post-editor-copy-btn" type="button" data-article-copy-slug title="Sao chép liên kết bài viết" aria-label="Sao chép liên kết">
+                        <i class="bi bi-copy"></i>
+                    </button>
+                </div>
+
+                <!-- Card 3: Rich Text Editor & Toolbar -->
+                <div class="post-editor-card post-editor-editor-card">
+                    @if (!PreviewMode)
+                    {
+                        <!-- Toolbar -->
+                        <div class="post-editor-toolbar" role="toolbar" aria-label="Định dạng Markdown">
+                            <select class="post-editor-heading-select" aria-label="Chèn tiêu đề" data-article-heading="article-body">
+                                <option value="">Đoạn văn</option>
+                                <option value="h1">Tiêu đề 1 (H1)</option>
+                                <option value="h2">Tiêu đề 2 (H2)</option>
+                                <option value="h3">Tiêu đề 3 (H3)</option>
+                                <option value="quote">Trích dẫn</option>
+                            </select>
+                            <div class="post-editor-divider"></div>
+                            <button class="post-editor-btn fw-bold" type="button" title="In đậm (Bold)" data-article-format="bold" data-editor-target="article-body"><i class="bi bi-type-bold"></i></button>
+                            <button class="post-editor-btn fst-italic" type="button" title="In nghiêng (Italic)" data-article-format="italic" data-editor-target="article-body"><i class="bi bi-type-italic"></i></button>
+                            <div class="post-editor-divider"></div>
+                            <button class="post-editor-btn" type="button" title="Chèn liên kết" data-article-format="link" data-editor-target="article-body"><i class="bi bi-link-45deg"></i></button>
+                            <button class="post-editor-btn" type="button" title="Danh sách dấu chấm" data-article-format="unordered-list" data-editor-target="article-body"><i class="bi bi-list-ul"></i></button>
+                            <button class="post-editor-btn" type="button" title="Danh sách có số" data-article-format="ordered-list" data-editor-target="article-body"><i class="bi bi-list-ol"></i></button>
+                            <div class="post-editor-divider"></div>
+                            <button class="post-editor-btn" type="button" title="Trích dẫn" data-article-format="quote" data-editor-target="article-body"><i class="bi bi-quote"></i></button>
+                            <button class="post-editor-btn" type="button" title="Khối mã nguồn" data-article-format="code" data-editor-target="article-body"><i class="bi bi-code-slash"></i></button>
+                            <button class="post-editor-btn" type="button" title="Chèn bảng" data-article-format="table" data-editor-target="article-body"><i class="bi bi-table"></i></button>
+                            <button class="post-editor-btn" type="button" title="Chèn ảnh từ thư viện" data-article-preset-toggle><i class="bi bi-image"></i></button>
+                        </div>
+                        <textarea id="article-body" class="post-editor-textarea" name="contentMarkdown" rows="18" minlength="50" maxlength="200000" placeholder="Viết nội dung bài viết của bạn ở đây..." required @bind="ContentMarkdown" @bind:event="oninput"></textarea>
+                    }
+                    else
+                    {
+                        <input type="hidden" name="contentMarkdown" value="@ContentMarkdown" />
+                        <article class="post-editor-preview">
+                            @if (string.IsNullOrWhiteSpace(ContentMarkdown))
+                            {
+                                <div class="text-body-secondary fst-italic p-4 text-center">
+                                    <i class="bi bi-file-earmark-text fs-1 d-block mb-2 text-muted"></i>
+                                    Chưa có nội dung xem trước. Hãy nhập nội dung ở chế độ soạn thảo.
+                                </div>
+                            }
+                            else if (PreviewHtml is not null)
+                            {
+                                <div class="article-markdown">@((MarkupString)PreviewHtml)</div>
+                            }
+                            else
+                            {
+                                <div class="post-editor-error">Nội dung có liên kết không an toàn; hãy sửa trước khi xem trước.</div>
+                            }
+                        </article>
+                    }
+                    <!-- Bottom Status Bar -->
+                    <div class="post-editor-statusbar">
+                        <span>Markdown</span>
+                        <span>@WordCount từ · ~@ReadingTime phút đọc</span>
+                    </div>
+                </div>
+
+                <!-- Card 4: Tóm tắt (meta description) -->
+                <div class="post-editor-card">
+                    <div class="post-editor-card-header">
+                        <label class="post-editor-card-title">
+                            <span>Tóm tắt (meta description)</span>
+                            <span class="post-editor-card-help" title="Hiển thị trên thẻ tìm kiếm và trang danh sách bài viết"><i class="bi bi-question-circle"></i></span>
+                        </label>
+                        <small class="text-body-secondary font-monospace">@Summary.Length/700 ký tự</small>
+                    </div>
+                    <textarea class="form-control rounded-3 border" name="summary" minlength="20" maxlength="700" rows="3" placeholder="Nhập tóm tắt ngắn gọn về bài viết... (sẽ hiển thị ở trang danh sách và kết quả tìm kiếm)" required @bind="Summary" @bind:event="oninput"></textarea>
+                </div>
+            </div>
+
+            <!-- Right Column: Cover Image, Category, Status, Publish Date, Actions (col-lg-4) -->
+            <div class="col-lg-4">
+                <!-- Card 1: Ảnh đại diện -->
+                <div class="post-editor-card">
+                    <div class="post-editor-card-header">
+                        <div class="post-editor-card-title">
+                            <span class="post-editor-card-badge"><i class="bi bi-image"></i></span>
+                            <span>Ảnh đại diện</span>
+                            <span class="post-editor-card-help" title="Ảnh tiêu đề chính của bài viết, tỉ lệ khuyến nghị 16:9"><i class="bi bi-question-circle"></i></span>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 text-primary fw-semibold" data-article-preset-toggle>Mẫu có sẵn</button>
+                    </div>
+
+                    <!-- Presets Grid Picker (hidden by default) -->
+                    <div id="article-image-presets" hidden>
+                        @if (!AvailableImages.Any())
+                        {
+                            <p class="small text-body-secondary mb-2">Chưa có ảnh trong hệ thống để chọn mẫu.</p>
+                        }
+                        else
+                        {
+                            <div class="post-editor-preset-grid">
+                                @foreach (var article in AvailableImages)
+                                {
+                                    <div class="post-editor-preset-item" data-article-preset-cover data-image-url="@article.CoverUrl" data-image-alt="@article.Title" title="Chọn làm ảnh bìa: @article.Title">
+                                        <img src="@article.CoverUrl" alt="" loading="lazy" />
+                                        <span>@article.Title</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Drag & Drop Upload Zone -->
+                    <div class="post-editor-dropzone" data-article-cover-dropzone>
+                        <div class="post-editor-dropzone-icon">
+                            <i class="bi bi-cloud-arrow-up"></i>
+                        </div>
+                        <p class="fw-semibold text-primary mb-1 small">Nhấn để tải ảnh lên</p>
+                        <p class="text-body-secondary mb-1" style="font-size: 11px;">Hoặc kéo thả ảnh vào đây</p>
+                        <p class="text-muted mb-0" style="font-size: 10px;">(Tối ưu: 1200 x 630px, JPG/PNG/WebP, &lt; 8MB)</p>
+                    </div>
+
+                    <input name="cover" type="file" accept="image/jpeg,image/png,image/gif,image/webp" data-article-cover-input hidden />
+
+                    <!-- Image Preview Box -->
+                    <div class="post-editor-preview-container" data-article-cover-preview-container hidden>
+                        <img data-article-cover-preview alt="Ảnh đại diện xem trước" class="post-editor-preview-img" />
+                        <button class="post-editor-preview-clear" type="button" title="Bỏ ảnh đại diện" aria-label="Bỏ ảnh" data-article-cover-clear>
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+
+                    <!-- Alt Text -->
+                    <div class="mt-3">
+                        <input class="form-control form-control-sm rounded-3" name="coverAlt" maxlength="300" placeholder="Mô tả nội dung ảnh đại diện (cho SEO)..." />
+                    </div>
+                </div>
+
+                <!-- Card 2: Danh mục -->
+                <div class="post-editor-card">
+                    <div class="post-editor-card-title mb-2">
+                        <span class="post-editor-card-badge"><i class="bi bi-book"></i></span>
+                        <span>Chuyên mục</span>
+                    </div>
+                    <select class="form-select rounded-3" name="categoryId" required>
+                        <option value="" disabled selected>Chọn chuyên mục...</option>
+                        @foreach (var category in Snapshot.Categories)
+                        {
+                            <option value="@category.Id">@category.DisplayName</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Card 3: Trạng thái (Radio options matching book-&-science-blog) -->
+                <div class="post-editor-card">
+                    <div class="post-editor-card-title mb-2">
+                        <span class="post-editor-card-badge"><i class="bi bi-question-circle"></i></span>
+                        <span>Trạng thái</span>
+                    </div>
+                    <div class="post-editor-radio-list">
+                        <label class="post-editor-radio-item @(SelectedStatus == "Draft" ? "is-selected" : "")">
+                            <input class="post-editor-radio-input" type="radio" name="status" value="Draft" checked="@(SelectedStatus == "Draft")" @onchange='() => SelectedStatus = "Draft"' />
+                            <div class="post-editor-radio-body">
+                                <p class="post-editor-radio-label">Nháp</p>
+                                <p class="post-editor-radio-desc">Chỉ mình bạn có thể xem</p>
+                            </div>
+                        </label>
+                        <label class="post-editor-radio-item @(SelectedStatus == "Published" ? "is-selected" : "")">
+                            <input class="post-editor-radio-input" type="radio" name="status" value="Published" checked="@(SelectedStatus == "Published")" @onchange='() => SelectedStatus = "Published"' />
+                            <div class="post-editor-radio-body">
+                                <p class="post-editor-radio-label">Công khai</p>
+                                <p class="post-editor-radio-desc">Mọi người có thể xem</p>
+                            </div>
+                        </label>
+                        <label class="post-editor-radio-item @(SelectedStatus == "Scheduled" ? "is-selected" : "")">
+                            <input class="post-editor-radio-input" type="radio" name="status" value="Scheduled" checked="@(SelectedStatus == "Scheduled")" @onchange='() => SelectedStatus = "Scheduled"' />
+                            <div class="post-editor-radio-body">
+                                <p class="post-editor-radio-label">Lên lịch</p>
+                                <p class="post-editor-radio-desc">Tự động đăng vào thời gian đã chọn</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Card 4: Thời gian đăng / hẹn giờ -->
+                <div class="post-editor-card">
+                    <div class="post-editor-card-title mb-2">
+                        <span class="post-editor-card-badge"><i class="bi bi-calendar-event"></i></span>
+                        <span>Thời gian đăng (nếu có)</span>
+                    </div>
+                    <input class="form-control rounded-3 font-monospace" name="publishedAtUtc" type="datetime-local" />
+                    <small class="text-body-secondary d-block mt-1" style="font-size: 11px;">Bắt buộc khi chọn “Đã lên lịch” (giờ UTC).</small>
+                </div>
+
+                <!-- Card 5: Thư viện ảnh tải kèm -->
+                <div class="post-editor-card">
+                    <div class="post-editor-card-title mb-2">
+                        <span class="post-editor-card-badge"><i class="bi bi-images"></i></span>
+                        <span>Thư viện ảnh tải kèm</span>
+                    </div>
+                    <input class="form-control form-control-sm rounded-3" name="gallery" type="file" accept="image/jpeg,image/png,image/gif,image/webp" multiple />
+                    <small class="text-body-secondary d-block mt-1" style="font-size: 11px;">Đính kèm thêm các ảnh minh họa cho nội dung bài viết.</small>
+                </div>
+
+                <!-- Card 6: Action Buttons -->
+                <div class="post-editor-actions">
+                    <button class="post-editor-btn-draft" type="button" data-article-save-draft>Lưu nháp</button>
+                    <button class="post-editor-btn-publish" type="submit">
+                        <i class="bi bi-send-fill"></i>
+                        <span>Đăng bài</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@code {
+    private string Title { get; set; } = string.Empty;
+    private string Slug { get; set; } = string.Empty;
+    private string ContentMarkdown { get; set; } = string.Empty;
+    private string Summary { get; set; } = string.Empty;
+    private string SelectedStatus { get; set; } = "Draft";
+    private bool PreviewMode { get; set; }
+    private ArticleAdminSnapshot Snapshot { get; set; } = new([], []);
+
+    private int WordCount => string.IsNullOrWhiteSpace(ContentMarkdown)
+        ? 0
+        : ContentMarkdown.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
+
+    private int ReadingTime => Math.Max(1, (WordCount + 199) / 200);
+
+    private string? PreviewHtml
+    {
+        get
+        {
+            try { return MarkdownRenderer.Render(ContentMarkdown); }
+            catch (InvalidOperationException) { return null; }
+        }
+    }
+
+    private IEnumerable<ArticleAdminSummary> AvailableImages => Snapshot.Articles
+        .Where(article => !string.IsNullOrWhiteSpace(article.CoverUrl))
+        .GroupBy(article => article.CoverUrl, StringComparer.Ordinal)
+        .Select(group => group.First())
+        .Take(6);
+
+    protected override async Task OnInitializedAsync() => Snapshot = await ArticlesService.GetSnapshotAsync();
+}

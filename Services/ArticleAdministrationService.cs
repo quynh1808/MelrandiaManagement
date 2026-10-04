@@ -20,6 +20,23 @@ public sealed partial class ArticleAdministrationService(
     PublicArticleCatalog publicCatalog,
     IOptions<ArticleMediaOptions> mediaOptions)
 {
+    public async Task<ArticleCountTrend> GetCountTrendAsync(CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+        var currentMonthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var nextMonthStart = currentMonthStart.AddMonths(1);
+        var previousMonthStart = currentMonthStart.AddMonths(-1);
+
+        await using var db = await factory.CreateDbContextAsync(cancellationToken);
+        var totalCount = await db.Articles.CountAsync(cancellationToken);
+        var currentMonthCount = await db.Articles.CountAsync(
+            x => x.CreatedAtUtc >= currentMonthStart && x.CreatedAtUtc < nextMonthStart, cancellationToken);
+        var previousMonthCount = await db.Articles.CountAsync(
+            x => x.CreatedAtUtc >= previousMonthStart && x.CreatedAtUtc < currentMonthStart, cancellationToken);
+
+        return new ArticleCountTrend(totalCount, currentMonthCount - previousMonthCount);
+    }
+
     public async Task<ArticleAdminSnapshot> GetSnapshotAsync(CancellationToken cancellationToken = default)
     {
         await using var db = await factory.CreateDbContextAsync(cancellationToken);
@@ -41,6 +58,85 @@ public sealed partial class ArticleAdministrationService(
                 x.ContentMarkdown, x.Status, x.PublishedAtUtc, x.Author.DisplayName,
                 x.Media.OrderBy(m => m.DisplayOrder).ToList(), x.Version))
             .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<Guid> DuplicateAsync(Guid id, Guid authorId, string actor,
+        CancellationToken cancellationToken = default)
+    {
+        await using var db = await factory.CreateDbContextAsync(cancellationToken);
+        var source = await db.Articles.AsNoTracking().Include(x => x.Media)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
+            ?? throw new InvalidOperationException("Bài viết không còn tồn tại.");
+
+        const string titleSuffix = " (Bản sao)";
+        var title = source.Title[..Math.Min(source.Title.Length, 240 - titleSuffix.Length)] + titleSuffix;
+        var slugSuffix = $"-copy-{Guid.NewGuid():N}"[..14];
+        var slug = source.Slug[..Math.Min(source.Slug.Length, 160 - slugSuffix.Length)] + slugSuffix;
+        var duplicate = new PortalArticle
+        {
+            CategoryId = source.CategoryId,
+            AuthorId = authorId,
+            Slug = slug,
+            Title = title,
+            Summary = source.Summary,
+            ContentMarkdown = source.ContentMarkdown,
+            Status = PortalArticleStatuses.Draft,
+            Version = 1,
+            Media = source.Media.Select(media => new PortalArticleMedia
+            {
+                StoragePath = media.StoragePath,
+                PublicUrl = media.PublicUrl,
+                OriginalFileName = media.OriginalFileName,
+                MimeType = media.MimeType,
+                FileSize = media.FileSize,
+                AltText = media.AltText,
+                Caption = media.Caption,
+                IsCover = media.IsCover,
+                DisplayOrder = media.DisplayOrder
+            }).ToList()
+        };
+
+        db.Articles.Add(duplicate);
+        db.AuditLogs.Add(new PortalAuditLog
+        {
+            Actor = actor,
+            Action = "article.duplicate",
+            EntityType = "article",
+            EntityId = duplicate.Id.ToString(),
+            Detail = JsonSerializer.Serialize(new { SourceArticleId = source.Id, duplicate.Slug })
+        });
+        await db.SaveChangesAsync(cancellationToken);
+        publicCatalog.Invalidate();
+        return duplicate.Id;
+    }
+
+    public async Task DeleteAsync(Guid id, string actor, CancellationToken cancellationToken = default)
+    {
+        await using var db = await factory.CreateDbContextAsync(cancellationToken);
+        var article = await db.Articles.Include(x => x.Media)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
+            ?? throw new InvalidOperationException("Bài viết không còn tồn tại.");
+        var storagePaths = article.Media.Select(media => media.StoragePath)
+            .Distinct(StringComparer.Ordinal).ToArray();
+
+        db.AuditLogs.Add(new PortalAuditLog
+        {
+            Actor = actor,
+            Action = "article.delete",
+            EntityType = "article",
+            EntityId = article.Id.ToString(),
+            Detail = JsonSerializer.Serialize(new { article.Slug, article.Title })
+        });
+        db.Articles.Remove(article);
+        await db.SaveChangesAsync(cancellationToken);
+
+        foreach (var storagePath in storagePaths)
+        {
+            if (!await db.ArticleMedia.AsNoTracking().AnyAsync(media => media.StoragePath == storagePath, cancellationToken))
+                await mediaStorage.DeleteIfExistsAsync(storagePath);
+        }
+
+        publicCatalog.Invalidate();
     }
 
     public async Task<Guid> SaveAsync(SaveArticleRequest request, IReadOnlyList<IFormFile> coverFiles,
@@ -129,7 +225,8 @@ public sealed partial class ArticleAdministrationService(
             throw new InvalidOperationException("Slug chỉ dùng chữ thường, số và dấu gạch ngang.");
         if (request.Title.Trim().Length is < 5 or > 240) throw new InvalidOperationException("Tiêu đề phải có 5-240 ký tự.");
         if (request.Summary.Trim().Length is < 20 or > 700) throw new InvalidOperationException("Mô tả ngắn phải có 20-700 ký tự.");
-        if (request.ContentMarkdown.Trim().Length is < 50 or > 200_000) throw new InvalidOperationException("Nội dung phải có 50-200.000 ký tự.");
+        if (request.ContentMarkdown.Trim().Length is < 50 or > 200_000)
+            throw new InvalidOperationException("Nội dung phải có 50-200.000 ký tự.");
         if (!PortalArticleStatuses.All.Contains(request.Status, StringComparer.Ordinal)) throw new InvalidOperationException("Trạng thái bài viết không hợp lệ.");
         if (coverFiles.Count > 1) throw new InvalidOperationException("Mỗi bài viết chỉ có một ảnh đại diện mới trong một lần lưu.");
         if (coverFiles.Count + galleryFiles.Count > mediaOptions.Value.MaxFilesPerArticle)

@@ -28,7 +28,7 @@
                     {
                         <a href="@($"/du-an/{project.Slug}")"><span>@project.Sequence</span><strong>@project.DisplayName</strong><small>@project.Status</small></a>
                     }
-                    <a class="dropdown-overview" href="/du-an">Xem tất cả dự án <i aria-hidden="true">→</i></a>
+                    <a class="dropdown-overview" href="/du-an">Xem tất cả dự án <span class="material-symbols-outlined" aria-hidden="true">arrow_right_alt</span></a>
                 </div>
             </div>
 
@@ -44,7 +44,7 @@
                     {
                         <a href="@($"/bai-viet/{category.Slug}")"><span>@category.Sequence</span><strong>@category.DisplayName</strong><small>@category.PublishedCount bài viết</small></a>
                     }
-                    <a class="dropdown-overview" href="/bai-viet">Xem tất cả bài viết <i aria-hidden="true">→</i></a>
+                    <a class="dropdown-overview" href="/bai-viet">Xem tất cả bài viết <span class="material-symbols-outlined" aria-hidden="true">arrow_right_alt</span></a>
                 </div>
             </div>
 
@@ -73,14 +73,14 @@
             <span class="tool-divider" aria-hidden="true"></span>
             <AuthorizeView>
                 <Authorized>
-                    <a class="login-link" href="/Management"><span>Quản lý</span><img class="login-arrow" src="/images/arrow-right.svg" alt="" aria-hidden="true" /></a>
+                    <a class="login-link" href="/Management"><span>Quản lý</span> <span class="material-symbols-outlined button-arrow" aria-hidden="true">arrow_right_alt</span></a>
                 </Authorized>
                 <NotAuthorized>
-                    <a class="login-link" href="/login">Đăng nhập<img class="button-arrow" src="/images/arrow-right.svg" alt="" aria-hidden="true" /></a>
+                    <a class="login-link" href="/login">Đăng nhập <span class="material-symbols-outlined button-arrow" aria-hidden="true">arrow_right_alt</span></a>
                 </NotAuthorized>
             </AuthorizeView>
             <button class="mobile-menu-button" type="button" data-menu-toggle aria-expanded="false" aria-controls="mobile-navigation">
-                <span class="sr-only">Mở menu</span><i></i><i></i><i></i>
+                <span class="sr-only">Mở menu</span><i class="material-symbols-outlined" aria-hidden="true">arrow_right_alt</i>
             </button>
         </div>
     </div>

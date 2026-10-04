@@ -263,6 +263,44 @@ app.MapPost("/management/articles/save", async (HttpContext http, IAntiforgery a
     }
 }).RequireAuthorization("ManagePortal");
 
+app.MapPost("/management/articles/duplicate", async (HttpContext http, IAntiforgery antiforgery,
+    ArticleAdministrationService articles, CancellationToken cancellationToken) =>
+{
+    await antiforgery.ValidateRequestAsync(http);
+    var form = await http.Request.ReadFormAsync(cancellationToken);
+    if (!Guid.TryParse(form["articleId"], out var articleId) ||
+        !Guid.TryParse(http.User.FindFirstValue(ClaimTypes.NameIdentifier), out var authorId))
+        return Results.Redirect("/Management/Articles?error=Du-lieu-khong-hop-le");
+    try
+    {
+        var duplicateId = await articles.DuplicateAsync(articleId, authorId,
+            http.User.Identity?.Name ?? "unknown", cancellationToken);
+        return Results.Redirect($"/Management/Articles?status=duplicated&id={duplicateId}");
+    }
+    catch (InvalidOperationException exception)
+    {
+        return Results.Redirect($"/Management/Articles?error={Uri.EscapeDataString(exception.Message)}");
+    }
+}).RequireAuthorization("ManagePortal");
+
+app.MapPost("/management/articles/delete", async (HttpContext http, IAntiforgery antiforgery,
+    ArticleAdministrationService articles, CancellationToken cancellationToken) =>
+{
+    await antiforgery.ValidateRequestAsync(http);
+    var form = await http.Request.ReadFormAsync(cancellationToken);
+    if (!Guid.TryParse(form["articleId"], out var articleId))
+        return Results.Redirect("/Management/Articles?error=Du-lieu-khong-hop-le");
+    try
+    {
+        await articles.DeleteAsync(articleId, http.User.Identity?.Name ?? "unknown", cancellationToken);
+        return Results.Redirect("/Management/Articles?status=deleted");
+    }
+    catch (InvalidOperationException exception)
+    {
+        return Results.Redirect($"/Management/Articles?error={Uri.EscapeDataString(exception.Message)}");
+    }
+}).RequireAuthorization("ManagePortal");
+
 app.MapPost("/management/users/create", async (HttpContext http, IAntiforgery antiforgery,
     PortalAdministrationService administration, CancellationToken cancellationToken) =>
 {

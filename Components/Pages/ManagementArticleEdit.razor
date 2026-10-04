@@ -1,0 +1,25 @@
+@page "/Management/Articles/Edit/{Id:guid}"
+@attribute [Authorize(Policy = "ManagePortal")]
+@layout ManagementLayout
+@inject ArticleAdministrationService ArticlesService
+
+<PageTitle>Chỉnh sửa bài viết · Melrandia</PageTitle>
+
+@if (Snapshot is null)
+{
+    <div class="management-loading">Đang tải bài viết…</div>
+}
+else
+{
+    <section class="management-page-heading compact">
+        <div><h1>Chỉnh sửa bài viết</h1><p>Cập nhật nội dung và thông tin xuất bản.</p></div>
+        <a class="management-secondary-action" href="/Management/Articles"><span class="material-symbols-outlined" aria-hidden="true">arrow_left_alt</span>Bài viết của tôi</a>
+    </section>
+    <EditArticleForm ArticleId="Id" Categories="Snapshot.Categories" />
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+    private ArticleAdminSnapshot? Snapshot { get; set; }
+    protected override async Task OnInitializedAsync() => Snapshot = await ArticlesService.GetSnapshotAsync();
+}

@@ -12,7 +12,7 @@
         {
             <a class="category-card reveal" href="@($"/bai-viet/{category.Slug}")">
                 <span>@category.Sequence</span><h2>@category.DisplayName</h2><p>@category.Summary</p>
-                <strong>@category.PublishedCount bài viết <i aria-hidden="true">→</i></strong>
+                <strong>@category.PublishedCount bài viết <span class="material-symbols-outlined" aria-hidden="true">arrow_right_alt</span></strong>
             </a>
         }
     </div>
@@ -30,7 +30,7 @@
                 <a class="public-article-card reveal" href="@ArticleUrl(article)">
                     @if (!string.IsNullOrWhiteSpace(article.CoverUrl)) { <img src="@article.CoverUrl" alt="@article.CoverAlt" loading="lazy" /> }
                     else { <span class="article-cover-placeholder">@article.CategoryName</span> }
-                    <div><small>@article.CategoryName · @article.PublishedAtUtc.ToLocalTime().ToString("dd/MM/yyyy")</small><h2>@article.Title</h2><p>@article.Summary</p><strong>Đọc bài viết →</strong></div>
+                    <div><small>@article.CategoryName · @article.PublishedAtUtc.ToLocalTime().ToString("dd/MM/yyyy")</small><h2>@article.Title</h2><p>@article.Summary</p><strong>Đọc bài viết <span class="material-symbols-outlined" aria-hidden="true">arrow_right_alt</span></strong></div>
                 </a>
             }
         </div>

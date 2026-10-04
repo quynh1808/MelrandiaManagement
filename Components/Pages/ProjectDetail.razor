@@ -6,7 +6,7 @@
     <PageTitle>Không tìm thấy dự án · Melrandia</PageTitle>
     <section class="simple-page status-page">
         <span class="page-kicker">Dự án</span><h1>Không tìm thấy dự án.</h1>
-        <a class="text-link" href="/du-an">Xem danh sách dự án →</a>
+        <a class="text-link" href="/du-an">Xem danh sách dự án <span class="material-symbols-outlined" aria-hidden="true">arrow_right_alt</span></a>
     </section>
 }
 else
@@ -19,13 +19,13 @@ else
         @if (Project.IsEnabled && !string.IsNullOrWhiteSpace(Project.PublicUrl))
         {
             <div class="detail-note">Dự án vận hành độc lập; Melrandia chỉ lưu điểm truy cập và không đọc database nghiệp vụ của dự án.</div>
-            <a class="button button-primary" href="@Project.PublicUrl">Mở @Project.ShortName <span aria-hidden="true">→</span></a>
+            <a class="button button-primary" href="@Project.PublicUrl">Mở @Project.ShortName <span class="material-symbols-outlined button-arrow" aria-hidden="true">arrow_right_alt</span></a>
         }
         else
         {
             <div class="detail-note">Dự án đang ở giai đoạn @Project.Status và chưa mở điểm truy cập vận hành.</div>
         }
-        <a class="text-link" href="/du-an">Trở về danh sách dự án →</a>
+        <a class="text-link" href="/du-an">Trở về danh sách dự án <span class="material-symbols-outlined" aria-hidden="true">arrow_right_alt</span></a>
     </section>
 }
 

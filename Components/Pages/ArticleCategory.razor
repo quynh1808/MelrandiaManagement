@@ -4,7 +4,7 @@
 @if (Category is null)
 {
     <PageTitle>Không tìm thấy chuyên mục · Melrandia</PageTitle>
-    <section class="simple-page status-page"><span class="page-kicker">Bài viết</span><h1>Không tìm thấy chuyên mục.</h1><a class="text-link" href="/bai-viet">Xem danh mục bài viết →</a></section>
+    <section class="simple-page status-page"><span class="page-kicker">Bài viết</span><h1>Không tìm thấy chuyên mục.</h1><a class="text-link" href="/bai-viet">Xem danh mục bài viết <span class="material-symbols-outlined" aria-hidden="true">arrow_right_alt</span></a></section>
 }
 else
 {
@@ -12,8 +12,8 @@ else
     <section class="simple-page article-category-page wide-page">
         <span class="page-kicker">@Category.Sequence · Chuyên mục</span><h1>@Category.DisplayName</h1><p>@Category.Summary</p>
         @if (Articles.Count == 0) { <div class="detail-note">Chưa có bài viết được xuất bản trong chuyên mục này.</div> }
-        else { <div class="public-article-grid">@foreach (var article in Articles){<a class="public-article-card reveal" href="@($"/bai-viet/{article.CategorySlug}/{article.Slug}")">@if (!string.IsNullOrWhiteSpace(article.CoverUrl)){<img src="@article.CoverUrl" alt="@article.CoverAlt" loading="lazy" />}else{<span class="article-cover-placeholder">@article.CategoryName</span>}<div><small>@article.PublishedAtUtc.ToLocalTime().ToString("dd/MM/yyyy") · @article.AuthorName</small><h2>@article.Title</h2><p>@article.Summary</p><strong>Đọc bài viết →</strong></div></a>}</div> }
-        <a class="text-link" href="/bai-viet">← Trở về danh mục bài viết</a>
+        else { <div class="public-article-grid">@foreach (var article in Articles){<a class="public-article-card reveal" href="@($"/bai-viet/{article.CategorySlug}/{article.Slug}")">@if (!string.IsNullOrWhiteSpace(article.CoverUrl)){<img src="@article.CoverUrl" alt="@article.CoverAlt" loading="lazy" />}else{<span class="article-cover-placeholder">@article.CategoryName</span>}<div><small>@article.PublishedAtUtc.ToLocalTime().ToString("dd/MM/yyyy") · @article.AuthorName</small><h2>@article.Title</h2><p>@article.Summary</p><strong>Đọc bài viết <span class="material-symbols-outlined" aria-hidden="true">arrow_right_alt</span></strong></div></a>}</div> }
+        <a class="text-link" href="/bai-viet"><span class="material-symbols-outlined" aria-hidden="true">arrow_left_alt</span>Trở về danh mục bài viết</a>
     </section>
 }
 
