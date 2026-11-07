@@ -269,6 +269,16 @@ public sealed class ArticlePublishingTests
             Assert.AreEqual("kiểm thử", article.Tags);
             Assert.HasCount(1, article.Media);
             Assert.IsTrue(File.Exists(Path.Combine(temporaryRoot, article.Media.Single().StoragePath.Replace('/', Path.DirectorySeparatorChar))));
+
+            var partialDraftId = await service.SaveAsync(new SaveArticleRequest(null, category.Id,
+                string.Empty, string.Empty, string.Empty, string.Empty, string.Empty,
+                PortalArticleStatuses.Draft, null, string.Empty, 1), [], [], author.Id, "admin");
+            await using var draftVerify = new ManagementDbContext(dbOptions);
+            var partialDraft = await draftVerify.Articles.SingleAsync(x => x.Id == partialDraftId);
+            Assert.AreEqual(string.Empty, partialDraft.Title);
+            Assert.AreEqual(string.Empty, partialDraft.Summary);
+            Assert.AreEqual(string.Empty, partialDraft.ContentMarkdown);
+            Assert.StartsWith("ban-nhap-", partialDraft.Slug);
         }
         finally
         {

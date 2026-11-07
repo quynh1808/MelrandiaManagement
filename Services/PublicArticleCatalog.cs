@@ -59,7 +59,7 @@ public sealed class PublicArticleCatalog(
                      x.Status == PortalArticleStatuses.Scheduled && x.PublishedAtUtc <= now))
                 .OrderByDescending(x => x.PublishedAtUtc)
                 .Select(x => new PublicArticleRow(x.Category.Slug, x.Category.DisplayName, x.Slug,
-                    x.Title, x.Summary, x.ContentMarkdown, x.Author.DisplayName,
+                    x.Title, x.Summary, x.Tags, x.ContentMarkdown, x.Author.DisplayName,
                     x.PublishedAtUtc ?? x.UpdatedAtUtc,
                     x.Media.Where(m => m.IsCover).OrderBy(m => m.DisplayOrder)
                         .Select(m => new PublicArticleMedia(m.PublicUrl, m.AltText, m.Caption)).FirstOrDefault(),
@@ -81,7 +81,7 @@ public sealed class PublicArticleCatalog(
                 categories,
                 rows.Select(x => new PublicArticleSummary(x.CategorySlug, x.CategoryName, x.Slug,
                     x.Title, x.Summary, x.AuthorName, x.Cover?.PublicUrl, x.Cover?.AltText,
-                    x.PublishedAtUtc)).ToList(),
+                    x.PublishedAtUtc, x.Tags)).ToList(),
                 rows.Select(x => new PublicArticleDetail(x.CategorySlug, x.CategoryName, x.Slug,
                     x.Title, x.Summary, markdownRenderer.Render(x.ContentMarkdown), x.AuthorName,
                     x.Cover?.PublicUrl, x.Cover?.AltText, x.PublishedAtUtc, x.Gallery)).ToList());
@@ -92,6 +92,6 @@ public sealed class PublicArticleCatalog(
     }
 
     private sealed record PublicArticleRow(string CategorySlug, string CategoryName, string Slug,
-        string Title, string Summary, string ContentMarkdown, string AuthorName,
+        string Title, string Summary, string Tags, string ContentMarkdown, string AuthorName,
         DateTime PublishedAtUtc, PublicArticleMedia? Cover, IReadOnlyList<PublicArticleMedia> Gallery);
 }

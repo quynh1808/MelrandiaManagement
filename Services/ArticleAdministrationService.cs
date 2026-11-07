@@ -281,7 +281,10 @@ public sealed partial class ArticleAdministrationService(
                 stored.Add(await mediaStorage.SaveAsync(file, article.Id, cancellationToken));
 
             article.CategoryId = request.CategoryId;
-            article.Slug = request.Slug.Trim().ToLowerInvariant();
+            article.Slug = string.IsNullOrWhiteSpace(request.Slug) &&
+                request.Status == PortalArticleStatuses.Draft
+                ? isNew ? $"ban-nhap-{Guid.NewGuid():N}"[..21] : article.Slug
+                : request.Slug.Trim().ToLowerInvariant();
             article.Title = request.Title.Trim();
             article.Summary = request.Summary.Trim();
             article.Tags = NormalizeTags(request.Tags);
@@ -336,17 +339,25 @@ public sealed partial class ArticleAdministrationService(
     private void Validate(SaveArticleRequest request, IReadOnlyList<IFormFile> coverFiles,
         IReadOnlyList<IFormFile> galleryFiles)
     {
-        if (!SlugPattern().IsMatch(request.Slug.Trim().ToLowerInvariant()))
+        var isDraft = request.Status == PortalArticleStatuses.Draft;
+        var slug = request.Slug.Trim().ToLowerInvariant();
+        if ((!isDraft && string.IsNullOrWhiteSpace(slug)) ||
+            !string.IsNullOrWhiteSpace(slug) && !SlugPattern().IsMatch(slug))
             throw new InvalidOperationException("Slug chỉ dùng chữ thường, số và dấu gạch ngang.");
-        if (request.Title.Trim().Length is < 5 or > 240) throw new InvalidOperationException("Tiêu đề phải có 5-240 ký tự.");
-        if (request.Summary.Trim().Length is < 20 or > 700) throw new InvalidOperationException("Mô tả ngắn phải có 20-700 ký tự.");
+        var titleLength = request.Title.Trim().Length;
+        if (titleLength > 240 || !isDraft && titleLength < 5)
+            throw new InvalidOperationException(isDraft ? "Tiêu đề không được vượt quá 240 ký tự." : "Tiêu đề phải có 5-240 ký tự.");
+        var summaryLength = request.Summary.Trim().Length;
+        if (summaryLength > 700 || !isDraft && summaryLength < 20)
+            throw new InvalidOperationException(isDraft ? "Mô tả ngắn không được vượt quá 700 ký tự." : "Mô tả ngắn phải có 20-700 ký tự.");
         var tags = request.Tags.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         if (tags.Length > 20) throw new InvalidOperationException("Bài viết chỉ được có tối đa 20 thẻ.");
         if (tags.Any(tag => tag.Length > 40)) throw new InvalidOperationException("Mỗi thẻ không được vượt quá 40 ký tự.");
         if (string.Join(", ", tags.Distinct(StringComparer.OrdinalIgnoreCase)).Length > 1000)
             throw new InvalidOperationException("Tổng độ dài thẻ không được vượt quá 1000 ký tự.");
-        if (request.ContentMarkdown.Trim().Length is < 50 or > 200_000)
-            throw new InvalidOperationException("Nội dung phải có 50-200.000 ký tự.");
+        var contentLength = request.ContentMarkdown.Trim().Length;
+        if (contentLength > 200_000 || !isDraft && contentLength < 50)
+            throw new InvalidOperationException(isDraft ? "Nội dung không được vượt quá 200.000 ký tự." : "Nội dung phải có 50-200.000 ký tự.");
         if (!PortalArticleStatuses.All.Contains(request.Status, StringComparer.Ordinal)) throw new InvalidOperationException("Trạng thái bài viết không hợp lệ.");
         if (coverFiles.Count > 1) throw new InvalidOperationException("Mỗi bài viết chỉ có một ảnh đại diện mới trong một lần lưu.");
         if (coverFiles.Count + galleryFiles.Count > mediaOptions.Value.MaxFilesPerArticle)

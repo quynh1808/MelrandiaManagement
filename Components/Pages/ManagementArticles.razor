@@ -5,7 +5,10 @@
 
 <PageTitle>Bài viết · Melrandia</PageTitle>
 
-<section class="management-page-heading compact"><div><h1>Bài viết</h1><p>Soạn thảo, xuất bản và quản lý hình ảnh của nội dung công khai.</p></div><a class="management-primary-action" href="/Management/Articles/New">＋ Thêm bài viết</a></section>
+<section class="management-page-heading compact article-page-heading">
+    <div><h1>Bài viết của tôi</h1><p>Quản lý, chỉnh sửa và theo dõi hiệu suất các bài viết blog.</p></div>
+    <a class="management-primary-action" href="/Management/Articles/New"><i class="bi bi-pencil-square" aria-hidden="true"></i> Soạn bài viết mới</a>
+</section>
 @if (Status == "deleted") { <div class="form-notice success">Đã xóa bài viết.</div> }
 else if (Status == "duplicated") { <div class="form-notice success">Đã tạo bản nháp sao chép.</div> }
 else if (Status == "saved") { <div class="form-notice success">Đã lưu bài viết và cập nhật Public Article Catalog.</div> }
@@ -19,10 +22,18 @@ else if (Status == "saved") { <div class="form-notice success">Đã lưu bài vi
 </section>
 
 <section class="management-panel article-registry-panel">
-    <header class="panel-toolbar">
-        <div><h2>Bài viết của tôi</h2><p>Quản lý, chỉnh sửa và theo dõi hiệu suất các bài viết blog.</p></div>
-        <label class="compact-select"><select data-management-status-filter aria-label="Lọc trạng thái"><option value="all">Tất cả trạng thái</option><option value="published">Công khai</option><option value="draft">Bản nháp</option><option value="scheduled">Đã lên lịch</option><option value="archived">Lưu trữ</option></select></label>
-    </header>
+    <div class="article-filter-bar" role="group" aria-label="Lọc bài viết">
+        <div class="article-filter-tabs" role="group" aria-label="Lọc theo trạng thái">
+            <button type="button" class="article-filter-tab active" data-article-filter-tab="all" aria-pressed="true">Tất cả <span>@Snapshot.Articles.Count</span></button>
+            <button type="button" class="article-filter-tab" data-article-filter-tab="published" aria-pressed="false">Công khai <span>@Count(PortalArticleStatuses.Published)</span></button>
+            <button type="button" class="article-filter-tab" data-article-filter-tab="draft" aria-pressed="false">Bản nháp <span>@Count(PortalArticleStatuses.Draft)</span></button>
+            <button type="button" class="article-filter-tab" data-article-filter-tab="scheduled" aria-pressed="false">Lên lịch <span>@Count(PortalArticleStatuses.Scheduled)</span></button>
+        </div>
+        <label class="article-filter-search">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input type="search" placeholder="Tìm theo tiêu đề, danh mục..." aria-label="Tìm bài viết theo tiêu đề hoặc chuyên mục" data-management-article-search />
+        </label>
+    </div>
     <div class="management-table-wrap">
         <table class="management-table article-management-table">
             <thead><tr><th>Bài viết</th><th>Chuyên mục</th><th>Trạng thái</th><th>Ảnh</th><th>Ngày cập nhật</th><th class="text-end">Thao tác</th></tr></thead>
@@ -30,7 +41,7 @@ else if (Status == "saved") { <div class="form-notice success">Đã lưu bài vi
                 @foreach (var article in Snapshot.Articles)
                 {
                     var statusClass = article.Status.ToLowerInvariant();
-                    <tr data-status="@statusClass" data-search-item="@($"{article.Title} {article.Slug} {article.CategoryName}")">
+                    <tr data-article-row data-status="@statusClass" data-search-item="@($"{article.Title} {article.Slug} {article.CategoryName}")">
                         <td>
                             <a class="article-table-identity" href="@($"/Management/Articles/Edit/{article.Id}")">
                                 @if (!string.IsNullOrWhiteSpace(article.CoverUrl))

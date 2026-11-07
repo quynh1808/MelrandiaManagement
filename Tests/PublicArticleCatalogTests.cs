@@ -35,6 +35,7 @@ public sealed class PublicArticleCatalogTests
         Assert.AreEqual("cong-nghe", categories.Single().Slug);
         Assert.AreEqual(2, categories.Single().PublishedCount);
         CollectionAssert.AreEquivalent(new[] { "published", "scheduled" }, articles.Select(x => x.Slug).ToArray());
+        Assert.AreEqual("khoa học, công nghệ", articles.Single(x => x.Slug == "published").Tags);
     }
 
     [TestMethod]
@@ -48,7 +49,8 @@ public sealed class PublicArticleCatalogTests
         string status, DateTime? publishedAt) => new()
         {
             CategoryId = categoryId, AuthorId = authorId, Slug = slug, Title = $"Article {slug}",
-            Summary = "A sufficiently long summary for the article.", ContentMarkdown = "# Heading\n\nSafe content.",
+            Summary = "A sufficiently long summary for the article.", Tags = slug == "published" ? "khoa học, công nghệ" : "",
+            ContentMarkdown = "# Heading\n\nSafe content.",
             Status = status, PublishedAtUtc = publishedAt
         };
 

@@ -3,6 +3,8 @@
 
     let noticeTimer;
     let revealObserver;
+    let pendingArticleNavigation = null;
+    let allowArticleNavigation = false;
 
     function showNotice(message) {
         const notice = document.getElementById("site-notice");
@@ -175,71 +177,74 @@
         editor.setSelectionRange(selectionStart, selectionEnd);
     }
 
+    function initializeArticleTags() {
+        document.querySelectorAll("[data-article-tags]").forEach(container => {
+            const values = container.querySelector("[data-article-tag-values]");
+            if (!values) return;
+            renderArticleTags(container, values.value.split(",").map(tag => tag.trim()).filter(Boolean));
+        });
+    }
+
+    function renderArticleTags(container, tags) {
+        const values = container.querySelector("[data-article-tag-values]");
+        const chips = container.querySelector("[data-article-tag-chips]");
+        if (!values || !chips) return;
+        values.value = tags.join(", ");
+        chips.replaceChildren();
+        tags.forEach(tag => {
+            const chip = document.createElement("span");
+            chip.className = "post-editor-tag-chip";
+            const label = document.createElement("span");
+            label.textContent = tag;
+            const remove = document.createElement("button");
+            remove.type = "button";
+            remove.dataset.articleTagRemove = tag;
+            remove.setAttribute("aria-label", `Xóa thẻ ${tag}`);
+            remove.innerHTML = '<i class="bi bi-x"></i>';
+            chip.append(label, remove);
+            chips.append(chip);
+        });
+    }
+
+    function addArticleTag(container) {
+        const input = container.querySelector("[data-article-tag-input]");
+        const values = container.querySelector("[data-article-tag-values]");
+        if (!input || !values) return false;
+        const tag = input.value.trim();
+        if (!tag) return true;
+        if (tag.length > 40) {
+            showNotice("Mỗi thẻ không được vượt quá 40 ký tự.");
+            return false;
+        }
+        const tags = values.value.split(",").map(item => item.trim()).filter(Boolean);
+        if (tags.some(item => item.toLocaleLowerCase("vi") === tag.toLocaleLowerCase("vi"))) {
+            input.value = "";
+            return true;
+        }
+        if (tags.length >= 20) {
+            showNotice("Bài viết chỉ được có tối đa 20 thẻ.");
+            return false;
+        }
+        tags.push(tag);
+        renderArticleTags(container, tags);
+        input.value = "";
+        return true;
+    }
+
     function initializePage() {
         closeMobileMenu();
         closeDropdowns();
         restoreSavedTheme();
         restoreSidebarState();
         initializeArticleTags();
+        document.querySelectorAll("[data-article-editor-form]").forEach(form => {
+            form.dataset.dirty = "false";
+        });
         if (window.location.hash === "#new-project") openProjectModal();
         openCategoryModal();
         if (window.location.hash) {
             const target = document.getElementById(window.location.hash.slice(1));
             if (target?.matches("details")) target.open = true;
-        }
-
-        function initializeArticleTags() {
-            document.querySelectorAll("[data-article-tags]").forEach(container => {
-                const values = container.querySelector("[data-article-tag-values]");
-                if (!values) return;
-                renderArticleTags(container, values.value.split(",").map(tag => tag.trim()).filter(Boolean));
-            });
-        }
-
-        function renderArticleTags(container, tags) {
-            const values = container.querySelector("[data-article-tag-values]");
-            const chips = container.querySelector("[data-article-tag-chips]");
-            if (!values || !chips) return;
-            values.value = tags.join(", ");
-            chips.replaceChildren();
-            tags.forEach(tag => {
-                const chip = document.createElement("span");
-                chip.className = "post-editor-tag-chip";
-                const label = document.createElement("span");
-                label.textContent = tag;
-                const remove = document.createElement("button");
-                remove.type = "button";
-                remove.dataset.articleTagRemove = tag;
-                remove.setAttribute("aria-label", `Xóa thẻ ${tag}`);
-                remove.innerHTML = '<i class="bi bi-x"></i>';
-                chip.append(label, remove);
-                chips.append(chip);
-            });
-        }
-
-        function addArticleTag(container) {
-            const input = container.querySelector("[data-article-tag-input]");
-            const values = container.querySelector("[data-article-tag-values]");
-            if (!input || !values) return false;
-            const tag = input.value.trim();
-            if (!tag) return true;
-            if (tag.length > 40) {
-                showNotice("Mỗi thẻ không được vượt quá 40 ký tự.");
-                return false;
-            }
-            const tags = values.value.split(",").map(item => item.trim()).filter(Boolean);
-            if (tags.some(item => item.toLocaleLowerCase("vi") === tag.toLocaleLowerCase("vi"))) {
-                input.value = "";
-                return true;
-            }
-            if (tags.length >= 20) {
-                showNotice("Bài viết chỉ được có tối đa 20 thẻ.");
-                return false;
-            }
-            tags.push(tag);
-            renderArticleTags(container, tags);
-            input.value = "";
-            return true;
         }
 
         const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -288,19 +293,136 @@
         applyManagementFilters();
     }
 
+    document.addEventListener("input", event => {
+        const form = event.target.closest("[data-article-editor-form]");
+        if (form) form.dataset.dirty = "true";
+    }, true);
+
+    document.addEventListener("change", event => {
+        const form = event.target.closest("[data-article-editor-form]");
+        if (form) form.dataset.dirty = "true";
+    }, true);
+
+    document.addEventListener("click", event => {
+        const action = event.target.closest("[data-article-leave-action]");
+        if (action) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            const dialog = action.closest("[data-article-leave-dialog]");
+            const form = document.querySelector("[data-article-editor-form]");
+            const navigation = pendingArticleNavigation;
+            pendingArticleNavigation = null;
+            dialog?.close();
+
+            if (action.dataset.articleLeaveAction === "cancel") return;
+            if (action.dataset.articleLeaveAction === "discard") {
+                allowArticleNavigation = true;
+                if (navigation) window.location.assign(navigation);
+                return;
+            }
+
+            if (action.dataset.articleLeaveAction === "save" && form) {
+                const draftRadio = form.querySelector("input[name='status'][value='Draft']");
+                if (draftRadio) draftRadio.checked = true;
+                const category = form.querySelector("[name='categoryId']");
+                if (!category?.reportValidity()) return;
+                const returnUrl = form.querySelector("[data-article-return-url]");
+                if (returnUrl && navigation) {
+                    const destination = new URL(navigation, window.location.href);
+                    returnUrl.value = destination.origin === window.location.origin
+                        ? `${destination.pathname}${destination.search}${destination.hash}`
+                        : "";
+                }
+                allowArticleNavigation = true;
+                form.submit();
+            }
+            return;
+        }
+
+        const link = event.target.closest("a[href]");
+        const form = document.querySelector("[data-article-editor-form]");
+        if (!link || !form || form.dataset.dirty !== "true" ||
+            event.defaultPrevented || event.button !== 0 ||
+            event.metaKey || event.ctrlKey || event.shiftKey || event.altKey ||
+            link.target && link.target !== "_self" || link.hasAttribute("download")) return;
+
+        let destination;
+        try {
+            destination = new URL(link.href, window.location.href);
+        } catch {
+            return;
+        }
+        if (destination.origin === window.location.origin &&
+            destination.pathname === window.location.pathname &&
+            destination.search === window.location.search) return;
+
+        const dialog = document.querySelector("[data-article-leave-dialog]");
+        if (!dialog || dialog.open) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        pendingArticleNavigation = destination.href;
+        dialog.showModal();
+    }, true);
+
+    document.addEventListener("cancel", event => {
+        if (!event.target.matches("[data-article-leave-dialog]")) return;
+        pendingArticleNavigation = null;
+    }, true);
+
+    document.addEventListener("submit", event => {
+        const form = event.target.closest("[data-article-editor-form]");
+        if (form && !event.defaultPrevented) allowArticleNavigation = true;
+    });
+
+    window.addEventListener("beforeunload", event => {
+        const form = document.querySelector("[data-article-editor-form]");
+        if (!allowArticleNavigation && form?.dataset.dirty === "true") {
+            event.preventDefault();
+            event.returnValue = "";
+        }
+    });
+    window.addEventListener("pageshow", () => {
+        allowArticleNavigation = false;
+        pendingArticleNavigation = null;
+    });
+
     // Search and status selects share one filter function so changing one control never
     // accidentally resets the other. Items opt in through data-search-item/data-status.
     function applyManagementFilters() {
-        const term = (document.querySelector("[data-management-search]")?.value || "").trim().toLocaleLowerCase("vi");
+        const searchInput = document.querySelector("[data-management-article-search]") ||
+            document.querySelector("[data-management-search]");
+        const term = (searchInput?.value || "").trim().toLocaleLowerCase("vi");
         const statuses = Array.from(document.querySelectorAll("[data-management-status-filter]"))
             .map(select => select.value).filter(value => value && value !== "all");
+        const articleTabs = document.querySelectorAll("[data-article-filter-tab]");
+        const articleStatus = document.querySelector("[data-article-filter-tab].active")?.dataset.articleFilterTab;
         document.querySelectorAll("[data-search-item], [data-status]").forEach(item => {
             const searchableText = (item.dataset.searchItem || item.textContent || "").toLocaleLowerCase("vi");
             const matchesText = term.length === 0 || searchableText.includes(term);
-            const matchesStatus = statuses.length === 0 || statuses.includes(item.dataset.status || "");
+            const matchesSelectedStatuses = statuses.length === 0 || statuses.includes(item.dataset.status || "");
+            const matchesArticleTab = articleTabs.length === 0 || item.hasAttribute("data-article-row") &&
+                (articleStatus === "all" || !articleStatus || (item.dataset.status || "") === articleStatus);
+            const matchesStatus = matchesSelectedStatuses && matchesArticleTab;
             item.hidden = !matchesText || !matchesStatus;
         });
     }
+
+    document.addEventListener("input", event => {
+        if (event.target.matches("[data-management-search], [data-management-article-search]"))
+            applyManagementFilters();
+    });
+
+    document.addEventListener("click", event => {
+        const tab = event.target.closest("[data-article-filter-tab]");
+        if (!tab) return;
+        const tabs = tab.closest(".article-filter-tabs");
+        tabs?.querySelectorAll("[data-article-filter-tab]").forEach(item => {
+            const active = item === tab;
+            item.classList.toggle("active", active);
+            item.setAttribute("aria-pressed", active ? "true" : "false");
+        });
+        applyManagementFilters();
+    });
 
     document.addEventListener("click", event => {
         const formatButton = event.target.closest("[data-article-format]");
@@ -464,7 +586,7 @@
                 slug.dataset.autoGenerated = "true";
             }
         }
-        if (!event.target.matches("[data-management-search]")) return;
+        if (!event.target.matches("[data-management-search], [data-management-article-search]")) return;
         applyManagementFilters();
     });
     document.addEventListener("keydown", event => {
@@ -601,7 +723,9 @@
             if (form) {
                 const draftRadio = form.querySelector("input[name='status'][value='Draft']");
                 if (draftRadio) draftRadio.checked = true;
-                if (form.reportValidity()) {
+                const category = form.querySelector("[name='categoryId']");
+                if (category?.reportValidity()) {
+                    allowArticleNavigation = true;
                     form.submit();
                 }
             }

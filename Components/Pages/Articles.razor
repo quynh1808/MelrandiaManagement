@@ -7,43 +7,95 @@
     <span class="page-kicker">Bài viết</span>
     <h1>Góc nhìn và hành trình phát triển.</h1>
     <p>Những ghi chép về kinh tế, công nghệ, sách và quá trình xây dựng các hệ thống Melrandia.</p>
-    <div class="category-grid">
+    <nav class="public-article-category-filters" aria-label="Lọc bài viết theo chuyên mục">
+        <button type="button" class="public-article-category-filter @(SelectedCategorySlug is null ? "active" : "")"
+                aria-pressed="@(SelectedCategorySlug is null)" @onclick="() => SelectedCategorySlug = null">
+            Tất cả bài viết (@PublishedArticles.Count)
+        </button>
         @foreach (var category in Categories)
         {
-            <a class="category-card reveal" href="@($"/bai-viet/{category.Slug}")">
-                <span>@category.Sequence</span><h2>@category.DisplayName</h2><p>@category.Summary</p>
-                <strong>@category.PublishedCount bài viết <span class="material-symbols-outlined" aria-hidden="true">arrow_right_alt</span></strong>
-            </a>
+            <button type="button" class="public-article-category-filter @(SelectedCategorySlug == category.Slug ? "active" : "")"
+                    aria-pressed="@(SelectedCategorySlug == category.Slug)" @onclick="() => SelectedCategorySlug = category.Slug">
+                @category.DisplayName
+            </button>
         }
-    </div>
+    </nav>
 
-    <header class="public-section-heading"><div><span class="page-kicker">Mới xuất bản</span><h2>Bài viết gần đây</h2></div></header>
-    @if (PublishedArticles.Count == 0)
-    {
-        <div class="detail-note">Chưa có bài viết được xuất bản. Bản nháp và bài lưu trữ không xuất hiện ở trang công khai.</div>
-    }
-    else
-    {
-        <div class="public-article-grid">
-            @foreach (var article in PublishedArticles)
-            {
-                <a class="public-article-card reveal" href="@ArticleUrl(article)">
-                    @if (!string.IsNullOrWhiteSpace(article.CoverUrl)) { <img src="@article.CoverUrl" alt="@article.CoverAlt" loading="lazy" /> }
-                    else { <span class="article-cover-placeholder">@article.CategoryName</span> }
-                    <div><small>@article.CategoryName · @article.PublishedAtUtc.ToLocalTime().ToString("dd/MM/yyyy")</small><h2>@article.Title</h2><p>@article.Summary</p><strong>Đọc bài viết <span class="material-symbols-outlined" aria-hidden="true">arrow_right_alt</span></strong></div>
-                </a>
-            }
-        </div>
-    }
+    <section class="public-article-list" aria-live="polite">
+        <h2>Danh sách bài viết (@FilteredArticles.Count)</h2>
+        @if (FilteredArticles.Count == 0)
+        {
+            <div class="detail-note">@(PublishedArticles.Count == 0
+                ? "Chưa có bài viết được xuất bản."
+                : "Chưa có bài viết trong chuyên mục này.")</div>
+        }
+        else
+        {
+            <div class="public-article-grid">
+                @foreach (var article in FilteredArticles)
+                {
+                    <a class="public-article-card public-article-list-card reveal" href="@ArticleUrl(article)">
+                        @if (!string.IsNullOrWhiteSpace(article.CoverUrl))
+                        {
+                            <img src="@article.CoverUrl" alt="@article.CoverAlt" loading="lazy" />
+                        }
+                        else
+                        {
+                            <span class="article-cover-placeholder">@article.CategoryName</span>
+                        }
+                        <div class="public-article-card-content">
+                            <small class="public-article-meta">@article.CategoryName <span aria-hidden="true">·</span> @article.PublishedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</small>
+                            <h3>@article.Title</h3>
+                            <p>@article.Summary</p>
+                            @if (ArticleTags(article.Tags).Count > 0)
+                            {
+                                <span class="public-article-tags">
+                                    @foreach (var tag in ArticleTags(article.Tags))
+                                    {
+                                        <span>#@tag</span>
+                                    }
+                                </span>
+                            }
+                            <span class="public-article-card-footer">
+                                <span class="public-article-author">
+                                    <span class="public-article-author-avatar" aria-hidden="true">@AuthorInitials(article.AuthorName)</span>
+                                    <span>@article.AuthorName</span>
+                                </span>
+                                <strong>Đọc bài viết <span class="material-symbols-outlined" aria-hidden="true">arrow_right_alt</span></strong>
+                            </span>
+                        </div>
+                    </a>
+                }
+            </div>
+        }
+    </section>
 </section>
 
 @code {
     private IReadOnlyList<PublicArticleCategory> Categories { get; set; } = [];
     private IReadOnlyList<PublicArticleSummary> PublishedArticles { get; set; } = [];
+    private string? SelectedCategorySlug { get; set; }
+    private IReadOnlyList<PublicArticleSummary> FilteredArticles => SelectedCategorySlug is null
+        ? PublishedArticles
+        : PublishedArticles.Where(article => article.CategorySlug == SelectedCategorySlug).ToList();
+
     protected override async Task OnInitializedAsync()
     {
         Categories = await ArticleCatalog.GetCategoriesAsync();
-        PublishedArticles = await ArticleCatalog.GetPublishedArticlesAsync(take: 9);
+        PublishedArticles = await ArticleCatalog.GetPublishedArticlesAsync();
     }
+
     private static string ArticleUrl(PublicArticleSummary article) => $"/bai-viet/{article.CategorySlug}/{article.Slug}";
+    private static IReadOnlyList<string> ArticleTags(string tags) => tags
+        .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+    private static string AuthorInitials(string name)
+    {
+        var words = name.Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        return words.Length switch
+        {
+            0 => "?",
+            1 => words[0][..1].ToUpperInvariant(),
+            _ => $"{words[0][..1]}{words[^1][..1]}".ToUpperInvariant()
+        };
+    }
 }

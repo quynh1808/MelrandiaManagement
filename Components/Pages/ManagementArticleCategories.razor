@@ -24,34 +24,31 @@ else if (Status == "deleted") { <div class="form-notice success">Đã xóa chuy�
     <article><span class="kpi-icon violet"><i class="bi bi-journal-text" aria-hidden="true"></i></span><div><small>Bài viết đã xuất bản</small><strong>@Categories.Sum(x => x.PublishedArticleCount)</strong><em>Trong các chủ đề</em></div></article>
 </section>
 
-@if (ShowForm)
-{
-    <dialog class="project-modal category-modal" data-category-modal data-open-on-load="true" aria-labelledby="category-modal-title">
-        <div class="project-modal-card">
-            <header class="project-modal-header">
-                <div><h2 id="category-modal-title">@(EditId.HasValue ? "Chỉnh sửa chuyên mục" : "Thêm chủ đề mới")</h2><p>Thông tin này được sử dụng trên trang bài viết công khai.</p></div>
-                <button class="project-modal-close" type="button" data-category-modal-close aria-label="Đóng cửa sổ">×</button>
-            </header>
-            <form class="portal-form category-form" method="post" action="/management/articles/categories/save">
-                <AntiforgeryToken />
-                <input type="hidden" name="id" value="@EditId" />
-                <div class="form-grid two">
-                    <label><span>Tên chủ đề</span><input name="displayName" value="@FormDisplayName" data-category-name maxlength="120" placeholder="Ví dụ: Khoa học vũ trụ" required /></label>
-                    <label><span>Slug URL</span><input name="slug" value="@FormSlug" data-category-slug data-auto-generated="@(!EditId.HasValue ? "true" : "false")" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" maxlength="80" placeholder="khoa-hoc-vu-tru" required /><small class="field-help">Đổi slug sẽ làm thay đổi đường dẫn công khai của chủ đề và bài viết.</small></label>
-                </div>
-                <label><span>Mô tả</span><textarea name="summary" rows="3" maxlength="500" placeholder="Mô tả ngắn về chủ đề này..." required>@FormSummary</textarea></label>
-                <div class="form-grid two category-form-options">
-                    <label><span>Thứ tự hiển thị</span><input type="number" name="displayOrder" value="@FormDisplayOrder" min="0" max="9999" required /><small class="field-help">Số nhỏ hơn sẽ xuất hiện trước.</small></label>
-                    <label class="single-checkbox"><input type="checkbox" name="isEnabled" checked="@FormIsEnabled" /> Hiển thị trên website công khai</label>
-                </div>
-                <div class="category-form-actions">
-                    <button class="management-primary-action" type="submit">@(EditId.HasValue ? "Lưu thay đổi" : "Tạo chủ đề")</button>
-                    <button class="management-secondary-action" type="button" data-category-modal-close>Hủy</button>
-                </div>
-            </form>
-        </div>
-    </dialog>
-}
+<dialog class="project-modal category-modal" data-category-modal data-open-on-load="@(ShowForm ? "true" : "false")" aria-labelledby="category-modal-title">
+    <div class="project-modal-card">
+        <header class="project-modal-header">
+            <div><h2 id="category-modal-title">@(EditId.HasValue ? "Chỉnh sửa chuyên mục" : "Thêm chủ đề mới")</h2><p>Thông tin này được sử dụng trên trang bài viết công khai.</p></div>
+            <button class="project-modal-close" type="button" data-category-modal-close aria-label="Đóng cửa sổ">×</button>
+        </header>
+        <form class="portal-form category-form" method="post" action="/management/articles/categories/save">
+            <AntiforgeryToken />
+            <input type="hidden" name="id" value="@EditId" />
+            <div class="form-grid two">
+                <label><span>Tên chủ đề</span><input name="displayName" value="@FormDisplayName" data-category-name maxlength="120" placeholder="Ví dụ: Khoa học vũ trụ" required /></label>
+                <label><span>Slug URL</span><input name="slug" value="@FormSlug" data-category-slug data-auto-generated="@(!EditId.HasValue ? "true" : "false")" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" maxlength="80" placeholder="khoa-hoc-vu-tru" required /><small class="field-help">Đổi slug sẽ làm thay đổi đường dẫn công khai của chủ đề và bài viết.</small></label>
+            </div>
+            <label><span>Mô tả</span><textarea name="summary" rows="3" maxlength="500" placeholder="Mô tả ngắn về chủ đề này..." required>@FormSummary</textarea></label>
+            <div class="form-grid two category-form-options">
+                <label><span>Thứ tự hiển thị</span><input type="number" name="displayOrder" value="@FormDisplayOrder" min="0" max="9999" required /><small class="field-help">Số nhỏ hơn sẽ xuất hiện trước.</small></label>
+                <label class="single-checkbox"><input type="checkbox" name="isEnabled" checked="@FormIsEnabled" /> Hiển thị trên website công khai</label>
+            </div>
+            <div class="category-form-actions">
+                <button class="management-primary-action" type="submit">@(EditId.HasValue ? "Lưu thay đổi" : "Tạo chủ đề")</button>
+                <button class="management-secondary-action" type="button" data-category-modal-close>Hủy</button>
+            </div>
+        </form>
+    </div>
+</dialog>
 
 <section class="management-panel category-list-panel">
     <header class="panel-toolbar">

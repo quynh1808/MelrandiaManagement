@@ -85,7 +85,7 @@ public sealed record ArticleAdminDetail(Guid Id, Guid CategoryId, string Slug, s
 
 public sealed record PublicArticleSummary(string CategorySlug, string CategoryName, string Slug,
     string Title, string Summary, string AuthorName, string? CoverUrl, string? CoverAlt,
-    DateTime PublishedAtUtc);
+    DateTime PublishedAtUtc, string Tags);
 
 public sealed record PublicArticleDetail(string CategorySlug, string CategoryName, string Slug,
     string Title, string Summary, string ContentHtml, string AuthorName, string? CoverUrl,

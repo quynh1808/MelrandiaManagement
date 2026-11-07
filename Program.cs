@@ -247,6 +247,12 @@ app.MapPost("/management/articles/save", async (HttpContext http, IAntiforgery a
         var articleId = await articles.SaveAsync(request, form.Files.GetFiles("cover"),
             form.Files.GetFiles("gallery"), authorId, http.User.Identity?.Name ?? "unknown",
             cancellationToken);
+        var returnUrl = form["returnUrl"].ToString();
+        if (returnUrl.StartsWith("/", StringComparison.Ordinal) &&
+            !returnUrl.StartsWith("//", StringComparison.Ordinal) &&
+            !returnUrl.StartsWith("/\\", StringComparison.Ordinal) &&
+            !returnUrl.Contains('\r') && !returnUrl.Contains('\n'))
+            return Results.Redirect(returnUrl);
         return Results.Redirect($"/Management/Articles?status=saved&id={articleId}");
     }
     catch (InvalidOperationException exception)

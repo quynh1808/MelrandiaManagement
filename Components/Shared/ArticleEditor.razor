@@ -29,10 +29,11 @@ else if (ArticleId is null || Article is not null)
         </div>
     </div>
 
-    <form id="article-editor-form" class="portal-form" method="post" action="/management/articles/save" enctype="multipart/form-data" onsubmit="return confirm('@(IsEditing ? "Bạn có chắc chắn muốn cập nhật bài viết này?" : "Bạn có chắc chắn muốn lưu bài viết với trạng thái đã chọn?")');">
+    <form id="article-editor-form" class="portal-form" data-article-editor-form data-dirty="false" method="post" action="/management/articles/save" enctype="multipart/form-data" onsubmit="return confirm('@(IsEditing ? "Bạn có chắc chắn muốn cập nhật bài viết này?" : "Bạn có chắc chắn muốn lưu bài viết với trạng thái đã chọn?")');">
         <AntiforgeryToken />
         <input type="hidden" name="id" value="@ArticleId" />
         <input type="hidden" name="version" value="@(Article?.Version ?? 1)" />
+        <input type="hidden" name="returnUrl" value="" data-article-return-url />
 
         <div class="row g-4 align-items-start">
             <!-- Left Column: Title, Slug, Rich Text Markdown Editor, Summary (col-lg-8) -->
@@ -277,6 +278,18 @@ else if (ArticleId is null || Article is not null)
         </div>
     </form>
 </div>
+<dialog class="article-leave-dialog" data-article-leave-dialog aria-labelledby="article-leave-title">
+    <div class="article-leave-dialog-card">
+        <span class="article-leave-dialog-icon"><i class="bi bi-file-earmark-text"></i></span>
+        <h2 id="article-leave-title">Bạn có muốn lưu nháp bài viết này không?</h2>
+        <p>Nội dung chưa lưu sẽ bị mất nếu bạn rời khỏi trang.</p>
+        <div class="article-leave-dialog-actions">
+            <button type="button" class="article-leave-save" data-article-leave-action="save">Lưu</button>
+            <button type="button" class="article-leave-discard" data-article-leave-action="discard">Không lưu</button>
+            <button type="button" class="article-leave-cancel" data-article-leave-action="cancel">Hủy bỏ</button>
+        </div>
+    </div>
+</dialog>
 }
 else
 {
