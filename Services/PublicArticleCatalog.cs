@@ -21,20 +21,13 @@ public sealed class PublicArticleCatalog(
         CancellationToken cancellationToken = default) =>
         (await GetSnapshotAsync(cancellationToken)).Categories;
 
-    public async Task<IReadOnlyList<PublicArticleSummary>> GetPublishedArticlesAsync(string? categorySlug = null,
-        int? take = null, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<PublicArticleSummary>> GetPublishedArticlesAsync(int? take = null,
+        CancellationToken cancellationToken = default)
     {
         IEnumerable<PublicArticleSummary> articles = (await GetSnapshotAsync(cancellationToken)).Articles;
-        if (!string.IsNullOrWhiteSpace(categorySlug))
-            articles = articles.Where(x => x.CategorySlug.Equals(categorySlug, StringComparison.OrdinalIgnoreCase));
         if (take.HasValue) articles = articles.Take(take.Value);
         return articles.ToList();
     }
-
-    public async Task<PublicArticleCategory?> FindCategoryAsync(string slug,
-        CancellationToken cancellationToken = default) =>
-        (await GetSnapshotAsync(cancellationToken)).Categories.FirstOrDefault(
-            x => x.Slug.Equals(slug, StringComparison.OrdinalIgnoreCase));
 
     public async Task<PublicArticleDetail?> FindPublishedArticleAsync(string categorySlug, string articleSlug,
         CancellationToken cancellationToken = default) =>

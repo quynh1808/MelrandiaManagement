@@ -1,5 +1,4 @@
 @inject PublicProjectCatalog ProjectCatalog
-@inject PublicArticleCatalog ArticleCatalog
 
 <header class="site-header" data-site-header>
     <div class="site-header-inner">
@@ -32,21 +31,7 @@
                 </div>
             </div>
 
-            <div class="nav-dropdown" data-nav-dropdown>
-                <span class="nav-dropdown-trigger">
-                    <NavLink href="/bai-viet">Bài viết</NavLink>
-                    <button type="button" data-dropdown-toggle aria-expanded="false" aria-label="Mở danh mục bài viết">
-                        <i class="chevron" aria-hidden="true"></i>
-                    </button>
-                </span>
-                <div class="nav-dropdown-menu article-dropdown" aria-label="Danh mục bài viết">
-                    @foreach (var category in ArticleCategories)
-                    {
-                        <a href="@($"/bai-viet/{category.Slug}")"><span>@category.Sequence</span><strong>@category.DisplayName</strong><small>@category.PublishedCount bài viết</small></a>
-                    }
-                    <a class="dropdown-overview" href="/bai-viet">Xem tất cả bài viết <span class="material-symbols-outlined" aria-hidden="true">arrow_right_alt</span></a>
-                </div>
-            </div>
+            <NavLink href="/bai-viet">Bài viết</NavLink>
 
             <NavLink href="/lien-he">Liên hệ</NavLink>
         </nav>
@@ -88,7 +73,7 @@
     <nav id="mobile-navigation" class="mobile-nav" aria-label="Điều hướng trên điện thoại" data-mobile-nav>
         <NavLink href="/" Match="NavLinkMatch.All">Trang chủ</NavLink>
         <NavLink href="/gioi-thieu">Giới thiệu</NavLink>
-        @* Project and article groups mirror the desktop dropdown on small screens. *@
+        @* Project group mirrors the desktop dropdown on small screens. *@
         <div class="mobile-nav-group" data-mobile-nav-group>
             <span class="mobile-nav-group-trigger">
                 <NavLink href="/du-an">Dự án</NavLink>
@@ -101,15 +86,7 @@
                 }
             </div>
         </div>
-        <div class="mobile-nav-group" data-mobile-nav-group>
-            <span class="mobile-nav-group-trigger">
-                <NavLink href="/bai-viet">Bài viết</NavLink>
-                <button type="button" data-mobile-nav-group-toggle aria-expanded="false" aria-label="Mở danh mục bài viết"><i class="chevron" aria-hidden="true"></i></button>
-            </span>
-            <div class="mobile-nav-group-items">
-                @foreach (var category in ArticleCategories) { <a href="@($"/bai-viet/{category.Slug}")"><span class="mobile-nav-item-sequence">@category.Sequence</span><span>@category.DisplayName</span></a> }
-            </div>
-        </div>
+        <NavLink href="/bai-viet">Bài viết</NavLink>
         <NavLink href="/lien-he">Liên hệ</NavLink>
         <AuthorizeView>
             <Authorized><NavLink href="/Management">Quản lý</NavLink></Authorized>
@@ -120,11 +97,7 @@
 
 @code {
     private IReadOnlyList<PublicProjectPreview> PublicProjects { get; set; } = [];
-    private IReadOnlyList<PublicArticleCategory> ArticleCategories { get; set; } = [];
 
-    protected override async Task OnInitializedAsync()
-    {
+    protected override async Task OnInitializedAsync() =>
         PublicProjects = await ProjectCatalog.GetPublishedProjectsAsync();
-        ArticleCategories = await ArticleCatalog.GetCategoriesAsync();
-    }
 }

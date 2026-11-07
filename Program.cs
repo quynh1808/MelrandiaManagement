@@ -230,16 +230,30 @@ app.MapPost("/management/projects/save", async (HttpContext http, IAntiforgery a
 }).RequireAuthorization("ManagePortal");
 
 app.MapPost("/management/articles/save", async (HttpContext http, IAntiforgery antiforgery,
-    ArticleAdministrationService articles, CancellationToken cancellationToken) =>
+    ArticleAdministrationService articles, ILogger<Program> logger,
+    CancellationToken cancellationToken) =>
 {
     await antiforgery.ValidateRequestAsync(http);
     var form = await http.Request.ReadFormAsync(cancellationToken);
-    if (!Guid.TryParse(http.User.FindFirstValue(ClaimTypes.NameIdentifier), out var authorId) ||
-        !Guid.TryParse(form["categoryId"], out var categoryId))
+    var id = Guid.TryParse(form["id"], out var parsedId) ? parsedId : (Guid?)null;
+    if (!Guid.TryParse(http.User.FindFirstValue(ClaimTypes.NameIdentifier), out var authorId))
+    {
+        var errorUrl = id.HasValue
+            ? $"/Management/Articles/Edit/{id}?error=Du-lieu-khong-hop-le"
+            : "/Management/Articles?error=Du-lieu-khong-hop-le";
+        return Results.Redirect(errorUrl);
+    }
+    if (!Guid.TryParse(form["categoryId"], out var categoryId))
+    {
+        if (id.HasValue)
+            return Results.Redirect($"/Management/Articles/Edit/{id}?error=Du-lieu-khong-hop-le");
         return Results.Redirect("/Management/Articles?error=Du-lieu-khong-hop-le");
+    }
+    if (id.HasValue && !int.TryParse(form["version"], out _))
+        return Results.Redirect($"/Management/Articles/Edit/{id}?error=Phien-ban-bai-viet-khong-hop-le-hay-tai-lai-trang");
+
     try
     {
-        var id = Guid.TryParse(form["id"], out var parsedId) ? parsedId : (Guid?)null;
         var request = new SaveArticleRequest(id, categoryId, form["slug"]!, form["title"]!,
             form["summary"]!, form["tags"]!, form["contentMarkdown"]!, form["status"]!,
             ParseUtcDateTime(form["publishedAtUtc"]!), form["coverAlt"]!,
@@ -247,25 +261,39 @@ app.MapPost("/management/articles/save", async (HttpContext http, IAntiforgery a
         var articleId = await articles.SaveAsync(request, form.Files.GetFiles("cover"),
             form.Files.GetFiles("gallery"), authorId, http.User.Identity?.Name ?? "unknown",
             cancellationToken);
+        logger.LogInformation("Bài viết {ArticleId} đã được lưu bởi {Actor}.", articleId,
+            http.User.Identity?.Name ?? "unknown");
         var returnUrl = form["returnUrl"].ToString();
         if (returnUrl.StartsWith("/", StringComparison.Ordinal) &&
             !returnUrl.StartsWith("//", StringComparison.Ordinal) &&
             !returnUrl.StartsWith("/\\", StringComparison.Ordinal) &&
             !returnUrl.Contains('\r') && !returnUrl.Contains('\n'))
             return Results.Redirect(returnUrl);
+        if (id.HasValue)
+            return Results.Redirect($"/Management/Articles/Edit/{articleId}?status=saved");
         return Results.Redirect($"/Management/Articles?status=saved&id={articleId}");
     }
     catch (InvalidOperationException exception)
     {
+        logger.LogWarning(exception, "Không thể lưu bài viết {ArticleId} do dữ liệu không hợp lệ.", id);
+        if (id.HasValue)
+            return Results.Redirect($"/Management/Articles/Edit/{id}?error={Uri.EscapeDataString(exception.Message)}");
         return Results.Redirect($"/Management/Articles?error={Uri.EscapeDataString(exception.Message)}");
     }
-    catch (DbUpdateConcurrencyException)
+    catch (DbUpdateConcurrencyException exception)
     {
+        logger.LogWarning(exception, "Xung đột phiên bản khi lưu bài viết {ArticleId}.", id);
+        if (id.HasValue)
+            return Results.Redirect($"/Management/Articles/Edit/{id}?error=Bai-viet-da-duoc-chinh-sua-o-phien-khac-hay-tai-lai-trang");
         return Results.Redirect("/Management/Articles?error=Bai-viet-da-duoc-chinh-sua-o-phien-khac-hay-tai-lai-trang");
     }
-    catch (DbUpdateException)
+    catch (DbUpdateException exception)
     {
-        return Results.Redirect("/Management/Articles?error=Slug-bai-viet-da-ton-tai");
+        logger.LogError(exception, "Lỗi cơ sở dữ liệu khi lưu bài viết {ArticleId}.", id);
+        const string error = "Không thể lưu bài viết do lỗi cơ sở dữ liệu. Vui lòng kiểm tra lại thông tin và thử lại.";
+        if (id.HasValue)
+            return Results.Redirect($"/Management/Articles/Edit/{id}?error={Uri.EscapeDataString(error)}");
+        return Results.Redirect($"/Management/Articles?error={Uri.EscapeDataString(error)}");
     }
 }).RequireAuthorization("ManagePortal");
 

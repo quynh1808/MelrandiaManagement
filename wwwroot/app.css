@@ -548,10 +548,6 @@ h1:focus-visible {
     transform: translateX(4px);
 }
 
-.article-dropdown {
-    width: 330px;
-}
-
 .header-tools {
     flex: 0 0 auto;
     gap: 9px;

@@ -6,13 +6,13 @@
     let pendingArticleNavigation = null;
     let allowArticleNavigation = false;
 
-    function showNotice(message) {
+    function showNotice(message, duration = 2800) {
         const notice = document.getElementById("site-notice");
         if (!notice) return;
         window.clearTimeout(noticeTimer);
         notice.textContent = message;
         notice.classList.add("is-visible");
-        noticeTimer = window.setTimeout(() => notice.classList.remove("is-visible"), 2800);
+        noticeTimer = window.setTimeout(() => notice.classList.remove("is-visible"), duration);
     }
 
     function updateThemeControl(theme, animate) {
@@ -237,6 +237,11 @@
         restoreSavedTheme();
         restoreSidebarState();
         initializeArticleTags();
+        const articleSaveSuccess = document.querySelector("[data-article-save-success]");
+        if (articleSaveSuccess) {
+            showNotice(articleSaveSuccess.textContent.trim(), 3000);
+            articleSaveSuccess.remove();
+        }
         document.querySelectorAll("[data-article-editor-form]").forEach(form => {
             form.dataset.dirty = "false";
         });

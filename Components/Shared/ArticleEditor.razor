@@ -8,6 +8,14 @@
 else if (ArticleId is null || Article is not null)
 {
 <div class="post-editor-container">
+    @if (SaveStatus == "saved")
+    {
+        <span data-article-save-success hidden>Đã lưu thay đổi bài viết.</span>
+    }
+    @if (!string.IsNullOrWhiteSpace(SaveError))
+    {
+        <div class="form-notice error" role="alert">@SaveError</div>
+    }
     <div class="post-editor-topbar">
         <div class="post-editor-header">
             <h1 class="post-editor-title">@(IsEditing ? "Chỉnh sửa bài viết" : "Thêm Bài viết")</h1>
@@ -298,6 +306,8 @@ else
 
 @code {
     [Parameter] public Guid? ArticleId { get; set; }
+    [Parameter] public string? SaveStatus { get; set; }
+    [Parameter] public string? SaveError { get; set; }
 
     private string Title { get; set; } = string.Empty;
     private string Slug { get; set; } = string.Empty;

@@ -205,11 +205,19 @@ public sealed class ArticlePublishingTests
         await service.SetCategoryEnabledAsync(category.Id, false, "admin");
         Assert.IsEmpty(await catalog.GetCategoriesAsync());
         await service.SaveAsync(new SaveArticleRequest(publishedArticle.Id, category.Id,
-                publishedArticle.Slug, publishedArticle.Title, "Mô tả bài viết đủ dài để vượt qua validation khi sửa.", "sách, công nghệ",
+                "bai-da-xuat-ban-cap-nhat", "Bài đã chỉnh sửa",
+                "Mô tả bài viết đủ dài để vượt qua validation khi sửa.", "sách, công nghệ",
                 "# Nội dung sửa\n\nNội dung bài viết được cập nhật đủ dài để kiểm tra lưu trong test.",
                 PortalArticleStatuses.Published, null, string.Empty, publishedArticle.Version),
             [], [], author.Id, "admin");
-        Assert.AreEqual("sách, công nghệ", (await service.FindAsync(publishedArticle.Id))?.Tags);
+        var updatedArticle = await service.FindAsync(publishedArticle.Id);
+        Assert.IsNotNull(updatedArticle);
+        Assert.AreEqual("bai-da-xuat-ban-cap-nhat", updatedArticle.Slug);
+        Assert.AreEqual("Bài đã chỉnh sửa", updatedArticle.Title);
+        Assert.AreEqual("Mô tả bài viết đủ dài để vượt qua validation khi sửa.", updatedArticle.Summary);
+        Assert.AreEqual("sách, công nghệ", updatedArticle.Tags);
+        Assert.AreEqual("# Nội dung sửa\n\nNội dung bài viết được cập nhật đủ dài để kiểm tra lưu trong test.", updatedArticle.ContentMarkdown);
+        Assert.AreEqual(publishedArticle.Version + 1, updatedArticle.Version);
         Assert.IsEmpty(await catalog.GetPublishedArticlesAsync());
         await service.SetCategoryEnabledAsync(category.Id, true, "admin");
         Assert.HasCount(1, await catalog.GetCategoriesAsync());

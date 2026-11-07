@@ -4,8 +4,10 @@
 
 <PageTitle>Chỉnh sửa bài viết · Melrandia</PageTitle>
 
-<ArticleEditor ArticleId="Id" />
+<ArticleEditor ArticleId="Id" SaveStatus="@Status" SaveError="@Error" />
 
 @code {
     [Parameter] public Guid Id { get; set; }
+    [SupplyParameterFromQuery(Name = "status")] public string? Status { get; set; }
+    [SupplyParameterFromQuery(Name = "error")] public string? Error { get; set; }
 }
