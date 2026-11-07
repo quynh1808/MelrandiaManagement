@@ -44,6 +44,13 @@ public sealed class PortalDatabaseInitializer(
 
     private async Task EnsureArticleCategoriesAsync(CancellationToken cancellationToken)
     {
+        var hasCategoryDeletion = await db.AuditLogs.AsNoTracking().AnyAsync(
+            x => x.EntityType == "article-category" && x.Action == "article-category.delete",
+            cancellationToken);
+        // Keep intentionally deleted defaults deleted after the next application startup.
+        if (hasCategoryDeletion)
+            return;
+
         var definitions = new[]
         {
             new PortalArticleCategory { Slug = "kinh-te", DisplayName = "Kinh tế", Summary = "Góc nhìn kinh tế, thị trường và giá trị thực tiễn của các mô hình sản xuất.", DisplayOrder = 1 },

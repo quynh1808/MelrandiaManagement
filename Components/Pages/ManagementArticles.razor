@@ -12,10 +12,10 @@ else if (Status == "saved") { <div class="form-notice success">Đã lưu bài vi
 @if (!string.IsNullOrWhiteSpace(Error)) { <div class="form-notice error">@Error</div> }
 
 <section class="management-kpi-grid">
-    <article><span class="kpi-icon blue">✎</span><div><small>Tổng bài viết</small><strong>@Snapshot.Articles.Count</strong><em>PostgreSQL</em></div></article>
-    <article><span class="kpi-icon green">✓</span><div><small>Published</small><strong>@Count(PortalArticleStatuses.Published)</strong><em>Đang công khai</em></div></article>
-    <article><span class="kpi-icon orange">◴</span><div><small>Draft &amp; Scheduled</small><strong>@DraftAndScheduled</strong><em>Chưa công khai</em></div></article>
-    <article><span class="kpi-icon violet">▣</span><div><small>Hình ảnh</small><strong>@Snapshot.Articles.Sum(x => x.MediaCount)</strong><em>Persistent volume</em></div></article>
+    <article><span class="kpi-icon blue"><img src="/images/Managements/TotalArticles.svg" alt="" aria-hidden="true" /></span><div><small>Tổng bài viết</small><strong>@Snapshot.Articles.Count</strong><em>PostgreSQL</em></div></article>
+    <article><span class="kpi-icon green"><img src="/images/Managements/Published.svg" alt="" aria-hidden="true" /></span><div><small>Published</small><strong>@Count(PortalArticleStatuses.Published)</strong><em>Đang công khai</em></div></article>
+    <article><span class="kpi-icon orange"><img src="/images/Managements/DraftScheduled.svg" alt="" aria-hidden="true" /></span><div><small>Draft &amp; Scheduled</small><strong>@DraftAndScheduled</strong><em>Chưa công khai</em></div></article>
+    <article><span class="kpi-icon violet"><img src="/images/Managements/Images.svg" alt="" aria-hidden="true" /></span><div><small>Hình ảnh</small><strong>@Snapshot.Articles.Sum(x => x.MediaCount)</strong><em>Persistent volume</em></div></article>
 </section>
 
 <section class="management-panel article-registry-panel">
@@ -50,17 +50,17 @@ else if (Status == "saved") { <div class="form-notice success">Đã lưu bài vi
                         <td>@article.UpdatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
                         <td class="text-end">
                             <div class="article-row-actions">
-                                <a class="article-icon-action" href="@($"/Management/Articles/Preview/{article.Id}")" title="Xem trước" aria-label="Xem trước"><i class="bi bi-eye"></i></a>
-                                <a class="article-icon-action edit" href="@($"/Management/Articles/Edit/{article.Id}")" title="Chỉnh sửa bài viết" aria-label="Chỉnh sửa"><i class="bi bi-pencil-square"></i></a>
+                                <a class="article-icon-action preview" href="@($"/Management/Articles/Preview/{article.Id}")" title="Xem trước" aria-label="Xem trước"><span class="material-symbols-outlined" aria-hidden="true">visibility</span></a>
+                                <a class="article-icon-action edit" href="@($"/Management/Articles/Edit/{article.Id}")" title="Chỉnh sửa bài viết" aria-label="Chỉnh sửa"><span class="material-symbols-outlined" aria-hidden="true">edit</span></a>
                                 <form method="post" action="/management/articles/duplicate">
                                     <AntiforgeryToken />
                                     <input type="hidden" name="articleId" value="@article.Id" />
-                                    <button class="article-icon-action" type="submit" title="Nhân bản bài viết" aria-label="Nhân bản"><i class="bi bi-copy"></i></button>
+                                    <button class="article-icon-action duplicate" type="submit" title="Nhân bản bài viết" aria-label="Nhân bản"><span class="material-symbols-outlined" aria-hidden="true">content_copy</span></button>
                                 </form>
                                 <form method="post" action="/management/articles/delete" onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài viết &quot;@article.Title&quot;? Thao tác này không thể hoàn tác.');">
                                     <AntiforgeryToken />
                                     <input type="hidden" name="articleId" value="@article.Id" />
-                                    <button class="article-icon-action delete" type="submit" title="Xóa bài viết" aria-label="Xóa bài viết"><i class="bi bi-trash3"></i></button>
+                                    <button class="article-icon-action delete" type="submit" title="Xóa bài viết" aria-label="Xóa bài viết"><span class="material-symbols-outlined" aria-hidden="true">delete</span></button>
                                 </form>
                             </div>
                         </td>

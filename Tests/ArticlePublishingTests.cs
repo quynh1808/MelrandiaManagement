@@ -147,6 +147,92 @@ public sealed class ArticlePublishingTests
     }
 
     [TestMethod]
+    public async Task CategoryAdministration_TracksUsageProtectsArticlesAndInvalidatesPublicCatalog()
+    {
+        var dbOptions = new DbContextOptionsBuilder<ManagementDbContext>()
+            .UseInMemoryDatabase($"article-category-admin-{Guid.NewGuid()}").Options;
+        var factory = new TestFactory(dbOptions);
+        var category = new PortalArticleCategory
+        {
+            Slug = "khoa-hoc",
+            DisplayName = "Khoa học",
+            Summary = "Các bài viết về khoa học và khám phá.",
+            DisplayOrder = 2
+        };
+        var author = new PortalUser { Id = Guid.NewGuid(), UserName = "admin", DisplayName = "Quản trị" };
+        var publishedArticle = new PortalArticle
+        {
+            CategoryId = category.Id,
+            AuthorId = author.Id,
+            Slug = "bai-da-xuat-ban",
+            Title = "Bài đã xuất bản",
+            Status = PortalArticleStatuses.Published,
+            PublishedAtUtc = DateTime.UtcNow
+        };
+        await using (var seed = new ManagementDbContext(dbOptions))
+        {
+            seed.ArticleCategories.Add(category);
+            seed.Users.Add(author);
+            seed.Articles.AddRange(
+                publishedArticle,
+                new PortalArticle
+                {
+                    CategoryId = category.Id,
+                    AuthorId = author.Id,
+                    Slug = "bai-nhap",
+                    Title = "Bài nháp",
+                    Status = PortalArticleStatuses.Draft
+                });
+            await seed.SaveChangesAsync();
+        }
+
+        var mediaOptions = Options.Create(new ArticleMediaOptions { RootPath = Path.GetTempPath() });
+        using var cache = new MemoryCache(new MemoryCacheOptions());
+        var markdown = new ArticleMarkdownRenderer();
+        var catalog = new PublicArticleCatalog(factory, cache, markdown);
+        var service = new ArticleAdministrationService(factory,
+            new ArticleMediaStorage(new TestEnvironment(Path.GetTempPath()), mediaOptions),
+            markdown, catalog, mediaOptions);
+
+        var summaries = await service.GetCategorySnapshotAsync();
+        Assert.HasCount(1, summaries);
+        Assert.AreEqual(2, summaries[0].ArticleCount);
+        Assert.AreEqual(1, summaries[0].PublishedArticleCount);
+        Assert.HasCount(1, await catalog.GetPublishedArticlesAsync());
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.DeleteCategoryAsync(category.Id, "admin"));
+
+        await service.SetCategoryEnabledAsync(category.Id, false, "admin");
+        Assert.IsEmpty(await catalog.GetCategoriesAsync());
+        await service.SaveAsync(new SaveArticleRequest(publishedArticle.Id, category.Id,
+                publishedArticle.Slug, publishedArticle.Title, "Mô tả bài viết đủ dài để vượt qua validation khi sửa.", "sách, công nghệ",
+                "# Nội dung sửa\n\nNội dung bài viết được cập nhật đủ dài để kiểm tra lưu trong test.",
+                PortalArticleStatuses.Published, null, string.Empty, publishedArticle.Version),
+            [], [], author.Id, "admin");
+        Assert.AreEqual("sách, công nghệ", (await service.FindAsync(publishedArticle.Id))?.Tags);
+        Assert.IsEmpty(await catalog.GetPublishedArticlesAsync());
+        await service.SetCategoryEnabledAsync(category.Id, true, "admin");
+        Assert.HasCount(1, await catalog.GetCategoriesAsync());
+        Assert.HasCount(1, await catalog.GetPublishedArticlesAsync());
+
+        await service.SaveCategoryAsync(new SaveArticleCategoryRequest(null, " Lich-su ",
+            "Lịch sử", "Các bài viết về lịch sử và những dấu mốc đáng nhớ.", 1, true), "admin");
+        var savedCategory = (await service.GetCategorySnapshotAsync()).Single(x => x.Slug == "lich-su");
+        Assert.AreEqual(0, savedCategory.ArticleCount);
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.SaveCategoryAsync(new SaveArticleCategoryRequest(null, " KHOA-HOC ",
+                "Khoa học mới", "Một chủ đề bị trùng slug để kiểm tra validation.", 3, true), "admin"));
+        await service.SaveCategoryAsync(new SaveArticleCategoryRequest(savedCategory.Id, "lich-su-tu-tuong",
+            "Lịch sử tư tưởng", "Các bài viết về lịch sử tư tưởng và những dấu mốc đáng nhớ.",
+            3, false), "admin");
+        var updatedCategory = (await service.GetCategorySnapshotAsync()).Single(x => x.Id == savedCategory.Id);
+        Assert.AreEqual("lich-su-tu-tuong", updatedCategory.Slug);
+        Assert.IsFalse(updatedCategory.IsEnabled);
+        await service.DeleteCategoryAsync(savedCategory.Id, "admin");
+        Assert.IsFalse((await service.GetCategorySnapshotAsync()).Any(x => x.Id == savedCategory.Id));
+    }
+
+    [TestMethod]
     public async Task SaveDraft_PersistsMetadataAndValidatedCoverFile()
     {
         var temporaryRoot = Path.Combine(Path.GetTempPath(), $"mm-article-test-{Guid.NewGuid():N}");
@@ -173,13 +259,14 @@ public sealed class ArticlePublishingTests
             var cover = new FormFile(stream, 0, bytes.Length, "cover", "cover.png");
 
             var id = await service.SaveAsync(new SaveArticleRequest(null, category.Id, "bai-viet-thu",
-                "Bài viết thử nghiệm", "Mô tả đủ dài cho bài viết thử nghiệm trong unit test.",
+                "Bài viết thử nghiệm", "Mô tả đủ dài cho bài viết thử nghiệm trong unit test.", "kiểm thử",
                 "# Nội dung\n\nĐây là nội dung Markdown an toàn và đủ dài để vượt qua validation.",
                 PortalArticleStatuses.Draft, null, "Ảnh thử nghiệm", 1), [cover], [], author.Id, "admin");
 
             await using var verify = new ManagementDbContext(dbOptions);
             var article = await verify.Articles.Include(x => x.Media).SingleAsync(x => x.Id == id);
             Assert.AreEqual(PortalArticleStatuses.Draft, article.Status);
+            Assert.AreEqual("kiểm thử", article.Tags);
             Assert.HasCount(1, article.Media);
             Assert.IsTrue(File.Exists(Path.Combine(temporaryRoot, article.Media.Single().StoragePath.Replace('/', Path.DirectorySeparatorChar))));
         }

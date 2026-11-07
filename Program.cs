@@ -241,7 +241,7 @@ app.MapPost("/management/articles/save", async (HttpContext http, IAntiforgery a
     {
         var id = Guid.TryParse(form["id"], out var parsedId) ? parsedId : (Guid?)null;
         var request = new SaveArticleRequest(id, categoryId, form["slug"]!, form["title"]!,
-            form["summary"]!, form["contentMarkdown"]!, form["status"]!,
+            form["summary"]!, form["tags"]!, form["contentMarkdown"]!, form["status"]!,
             ParseUtcDateTime(form["publishedAtUtc"]!), form["coverAlt"]!,
             int.TryParse(form["version"], out var version) ? version : 1);
         var articleId = await articles.SaveAsync(request, form.Files.GetFiles("cover"),
@@ -298,6 +298,83 @@ app.MapPost("/management/articles/delete", async (HttpContext http, IAntiforgery
     catch (InvalidOperationException exception)
     {
         return Results.Redirect($"/Management/Articles?error={Uri.EscapeDataString(exception.Message)}");
+    }
+}).RequireAuthorization("ManagePortal");
+
+app.MapPost("/management/articles/categories/save", async (HttpContext http, IAntiforgery antiforgery,
+    ArticleAdministrationService articles, CancellationToken cancellationToken) =>
+{
+    await antiforgery.ValidateRequestAsync(http);
+    var form = await http.Request.ReadFormAsync(cancellationToken);
+    var idValue = form["id"].ToString();
+    var id = string.IsNullOrWhiteSpace(idValue) ? (Guid?)null :
+        Guid.TryParse(idValue, out var parsedId) ? parsedId : (Guid?)null;
+    var returnPath = id.HasValue
+        ? $"/Management/Articles/Categories?edit={id.Value}"
+        : "/Management/Articles/Categories?create=true";
+    if (!string.IsNullOrWhiteSpace(idValue) && !id.HasValue)
+        return Results.Redirect($"{returnPath}&error={Uri.EscapeDataString("Dữ liệu chuyên mục không hợp lệ.")}");
+    if (!int.TryParse(form["displayOrder"], out var displayOrder))
+        return Results.Redirect($"{returnPath}&error={Uri.EscapeDataString("Thứ tự hiển thị không hợp lệ.")}");
+
+    try
+    {
+        await articles.SaveCategoryAsync(new SaveArticleCategoryRequest(id, form["slug"]!,
+                form["displayName"]!, form["summary"]!, displayOrder, form.ContainsKey("isEnabled")),
+            http.User.Identity?.Name ?? "unknown", cancellationToken);
+        return Results.Redirect($"/Management/Articles/Categories?status={(id.HasValue ? "updated" : "created")}");
+    }
+    catch (InvalidOperationException exception)
+    {
+        return Results.Redirect($"{returnPath}&error={Uri.EscapeDataString(exception.Message)}");
+    }
+    catch (DbUpdateException)
+    {
+        return Results.Redirect($"{returnPath}&error={Uri.EscapeDataString("Không thể lưu chuyên mục. Hãy kiểm tra slug có bị trùng không.")}");
+    }
+}).RequireAuthorization("ManagePortal");
+
+app.MapPost("/management/articles/categories/toggle", async (HttpContext http, IAntiforgery antiforgery,
+    ArticleAdministrationService articles, CancellationToken cancellationToken) =>
+{
+    await antiforgery.ValidateRequestAsync(http);
+    var form = await http.Request.ReadFormAsync(cancellationToken);
+    if (!Guid.TryParse(form["id"], out var id))
+        return Results.Redirect("/Management/Articles/Categories?error=Du-lieu-khong-hop-le");
+
+    var isEnabled = bool.TryParse(form["isEnabled"], out var enabled) && enabled;
+    try
+    {
+        await articles.SetCategoryEnabledAsync(id, isEnabled,
+            http.User.Identity?.Name ?? "unknown", cancellationToken);
+        return Results.Redirect($"/Management/Articles/Categories?status={(isEnabled ? "enabled" : "disabled")}");
+    }
+    catch (InvalidOperationException exception)
+    {
+        return Results.Redirect($"/Management/Articles/Categories?error={Uri.EscapeDataString(exception.Message)}");
+    }
+}).RequireAuthorization("ManagePortal");
+
+app.MapPost("/management/articles/categories/delete", async (HttpContext http, IAntiforgery antiforgery,
+    ArticleAdministrationService articles, CancellationToken cancellationToken) =>
+{
+    await antiforgery.ValidateRequestAsync(http);
+    var form = await http.Request.ReadFormAsync(cancellationToken);
+    if (!Guid.TryParse(form["id"], out var id))
+        return Results.Redirect("/Management/Articles/Categories?error=Du-lieu-khong-hop-le");
+
+    try
+    {
+        await articles.DeleteCategoryAsync(id, http.User.Identity?.Name ?? "unknown", cancellationToken);
+        return Results.Redirect("/Management/Articles/Categories?status=deleted");
+    }
+    catch (InvalidOperationException exception)
+    {
+        return Results.Redirect($"/Management/Articles/Categories?error={Uri.EscapeDataString(exception.Message)}");
+    }
+    catch (DbUpdateException)
+    {
+        return Results.Redirect($"/Management/Articles/Categories?error={Uri.EscapeDataString("Không thể xóa chuyên mục đang được bài viết sử dụng.")}");
     }
 }).RequireAuthorization("ManagePortal");
 

@@ -132,6 +132,11 @@ namespace MelrandiaManagement.Migrations
                     b.Property<DateTime?>("PublishedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Tags")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasMaxLength(160)

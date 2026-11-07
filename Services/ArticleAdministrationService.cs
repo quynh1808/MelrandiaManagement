@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 namespace MelrandiaManagement.Services;
 
 public sealed record SaveArticleRequest(Guid? Id, Guid CategoryId, string Slug, string Title,
-    string Summary, string ContentMarkdown, string Status, DateTime? PublishedAtUtc,
+    string Summary, string Tags, string ContentMarkdown, string Status, DateTime? PublishedAtUtc,
     string CoverAlt, int Version);
 
 /// <summary>Editorial use cases, upload compensation, workflow validation and audit.</summary>
@@ -50,12 +50,124 @@ public sealed partial class ArticleAdministrationService(
         return new ArticleAdminSnapshot(categories, articles);
     }
 
+    public async Task<IReadOnlyList<ArticleCategoryAdminSummary>> GetCategorySnapshotAsync(
+        CancellationToken cancellationToken = default)
+    {
+        await using var db = await factory.CreateDbContextAsync(cancellationToken);
+        return await db.ArticleCategories.AsNoTracking().OrderBy(x => x.DisplayOrder)
+            .ThenBy(x => x.DisplayName)
+            .Select(x => new ArticleCategoryAdminSummary(x.Id, x.Slug, x.DisplayName, x.Summary,
+                x.DisplayOrder, x.IsEnabled, x.Articles.Count,
+                x.Articles.Count(article => article.Status == PortalArticleStatuses.Published ||
+                    article.Status == PortalArticleStatuses.Scheduled && article.PublishedAtUtc <= DateTime.UtcNow)))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task SaveCategoryAsync(SaveArticleCategoryRequest request, string actor,
+        CancellationToken cancellationToken = default)
+    {
+        var slug = request.Slug.Trim().ToLowerInvariant();
+        var displayName = request.DisplayName.Trim();
+        var summary = request.Summary.Trim();
+        if (!CategorySlugPattern().IsMatch(slug))
+            throw new InvalidOperationException("Slug chỉ được gồm chữ thường không dấu, số và dấu gạch ngang.");
+        if (displayName.Length is < 2 or > 120)
+            throw new InvalidOperationException("Tên chuyên mục phải có từ 2 đến 120 ký tự.");
+        if (summary.Length is < 10 or > 500)
+            throw new InvalidOperationException("Mô tả phải có từ 10 đến 500 ký tự.");
+        if (request.DisplayOrder is < 0 or > 9999)
+            throw new InvalidOperationException("Thứ tự hiển thị phải nằm trong khoảng 0 đến 9999.");
+
+        await using var db = await factory.CreateDbContextAsync(cancellationToken);
+        var category = request.Id.HasValue
+            ? await db.ArticleCategories.FirstOrDefaultAsync(x => x.Id == request.Id.Value, cancellationToken)
+            : null;
+        if (request.Id.HasValue && category is null)
+            throw new InvalidOperationException("Chuyên mục cần chỉnh sửa không còn tồn tại.");
+        if (await db.ArticleCategories.AnyAsync(x => x.Slug == slug && (!request.Id.HasValue || x.Id != request.Id.Value),
+                cancellationToken))
+            throw new InvalidOperationException("Slug này đã được sử dụng bởi một chuyên mục khác.");
+
+        var isNew = category is null;
+        category ??= new PortalArticleCategory();
+        var previous = isNew ? null : JsonSerializer.Serialize(new
+        {
+            category.Slug,
+            category.DisplayName,
+            category.Summary,
+            category.DisplayOrder,
+            category.IsEnabled
+        });
+
+        category.Slug = slug;
+        category.DisplayName = displayName;
+        category.Summary = summary;
+        category.DisplayOrder = request.DisplayOrder;
+        category.IsEnabled = request.IsEnabled;
+        if (isNew) db.ArticleCategories.Add(category);
+
+        db.AuditLogs.Add(new PortalAuditLog
+        {
+            Actor = actor,
+            Action = isNew ? "article-category.create" : "article-category.update",
+            EntityType = "article-category",
+            EntityId = category.Id.ToString(),
+            Detail = JsonSerializer.Serialize(new { previous, current = request with { Slug = slug, DisplayName = displayName, Summary = summary } })
+        });
+        await db.SaveChangesAsync(cancellationToken);
+        publicCatalog.Invalidate();
+    }
+
+    public async Task SetCategoryEnabledAsync(Guid id, bool isEnabled, string actor,
+        CancellationToken cancellationToken = default)
+    {
+        await using var db = await factory.CreateDbContextAsync(cancellationToken);
+        var category = await db.ArticleCategories.FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
+            ?? throw new InvalidOperationException("Chuyên mục không còn tồn tại.");
+        if (category.IsEnabled == isEnabled)
+            return;
+
+        category.IsEnabled = isEnabled;
+        db.AuditLogs.Add(new PortalAuditLog
+        {
+            Actor = actor,
+            Action = isEnabled ? "article-category.enable" : "article-category.disable",
+            EntityType = "article-category",
+            EntityId = category.Id.ToString(),
+            Detail = JsonSerializer.Serialize(new { category.Slug, category.DisplayName })
+        });
+        await db.SaveChangesAsync(cancellationToken);
+        publicCatalog.Invalidate();
+    }
+
+    public async Task DeleteCategoryAsync(Guid id, string actor,
+        CancellationToken cancellationToken = default)
+    {
+        await using var db = await factory.CreateDbContextAsync(cancellationToken);
+        var category = await db.ArticleCategories.FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
+            ?? throw new InvalidOperationException("Chuyên mục không còn tồn tại.");
+        if (await db.Articles.AnyAsync(x => x.CategoryId == id, cancellationToken))
+            throw new InvalidOperationException("Chuyên mục đang có bài viết. Hãy chuyển bài viết sang chuyên mục khác trước khi xóa, hoặc ẩn chuyên mục.");
+
+        db.AuditLogs.Add(new PortalAuditLog
+        {
+            Actor = actor,
+            Action = "article-category.delete",
+            EntityType = "article-category",
+            EntityId = category.Id.ToString(),
+            Detail = JsonSerializer.Serialize(new { category.Slug, category.DisplayName })
+        });
+        db.ArticleCategories.Remove(category);
+        await db.SaveChangesAsync(cancellationToken);
+        publicCatalog.Invalidate();
+    }
+
     public async Task<ArticleAdminDetail?> FindAsync(Guid id, CancellationToken cancellationToken = default)
     {
         await using var db = await factory.CreateDbContextAsync(cancellationToken);
         return await db.Articles.AsNoTracking().Where(x => x.Id == id)
             .Select(x => new ArticleAdminDetail(x.Id, x.CategoryId, x.Slug, x.Title, x.Summary,
-                x.ContentMarkdown, x.Status, x.PublishedAtUtc, x.Author.DisplayName,
+                x.Tags, x.ContentMarkdown, x.Status, x.PublishedAtUtc, x.Author.DisplayName,
                 x.Media.OrderBy(m => m.DisplayOrder).ToList(), x.Version))
             .FirstOrDefaultAsync(cancellationToken);
     }
@@ -79,6 +191,7 @@ public sealed partial class ArticleAdministrationService(
             Slug = slug,
             Title = title,
             Summary = source.Summary,
+            Tags = source.Tags,
             ContentMarkdown = source.ContentMarkdown,
             Status = PortalArticleStatuses.Draft,
             Version = 1,
@@ -146,13 +259,14 @@ public sealed partial class ArticleAdministrationService(
         Validate(request, coverFiles, galleryFiles);
         _ = markdownRenderer.Render(request.ContentMarkdown);
         await using var db = await factory.CreateDbContextAsync(cancellationToken);
-        if (!await db.ArticleCategories.AnyAsync(x => x.Id == request.CategoryId && x.IsEnabled, cancellationToken))
-            throw new InvalidOperationException("Chuyên mục không tồn tại hoặc đã bị vô hiệu hóa.");
-
         var article = request.Id.HasValue
             ? await db.Articles.Include(x => x.Media).FirstOrDefaultAsync(x => x.Id == request.Id.Value, cancellationToken)
             : null;
         if (request.Id.HasValue && article is null) throw new InvalidOperationException("Bài viết không còn tồn tại.");
+        if (!await db.ArticleCategories.AnyAsync(x => x.Id == request.CategoryId &&
+                (x.IsEnabled || article != null && article.CategoryId == x.Id), cancellationToken))
+            throw new InvalidOperationException("Chuyên mục không tồn tại hoặc đã bị vô hiệu hóa.");
+
         var isNew = article is null;
         article ??= new PortalArticle { Id = Guid.NewGuid(), AuthorId = authorId };
         if (!isNew && article.Version != request.Version)
@@ -170,6 +284,7 @@ public sealed partial class ArticleAdministrationService(
             article.Slug = request.Slug.Trim().ToLowerInvariant();
             article.Title = request.Title.Trim();
             article.Summary = request.Summary.Trim();
+            article.Tags = NormalizeTags(request.Tags);
             article.ContentMarkdown = request.ContentMarkdown.Trim();
             article.Status = request.Status;
             article.PublishedAtUtc = PublicationTime(request);
@@ -225,6 +340,11 @@ public sealed partial class ArticleAdministrationService(
             throw new InvalidOperationException("Slug chỉ dùng chữ thường, số và dấu gạch ngang.");
         if (request.Title.Trim().Length is < 5 or > 240) throw new InvalidOperationException("Tiêu đề phải có 5-240 ký tự.");
         if (request.Summary.Trim().Length is < 20 or > 700) throw new InvalidOperationException("Mô tả ngắn phải có 20-700 ký tự.");
+        var tags = request.Tags.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        if (tags.Length > 20) throw new InvalidOperationException("Bài viết chỉ được có tối đa 20 thẻ.");
+        if (tags.Any(tag => tag.Length > 40)) throw new InvalidOperationException("Mỗi thẻ không được vượt quá 40 ký tự.");
+        if (string.Join(", ", tags.Distinct(StringComparer.OrdinalIgnoreCase)).Length > 1000)
+            throw new InvalidOperationException("Tổng độ dài thẻ không được vượt quá 1000 ký tự.");
         if (request.ContentMarkdown.Trim().Length is < 50 or > 200_000)
             throw new InvalidOperationException("Nội dung phải có 50-200.000 ký tự.");
         if (!PortalArticleStatuses.All.Contains(request.Status, StringComparer.Ordinal)) throw new InvalidOperationException("Trạng thái bài viết không hợp lệ.");
@@ -244,6 +364,13 @@ public sealed partial class ArticleAdministrationService(
         _ => null
     };
 
+    private static string NormalizeTags(string tags) => string.Join(", ",
+        tags.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Distinct(StringComparer.OrdinalIgnoreCase));
+
     [GeneratedRegex("^[a-z0-9](?:[a-z0-9-]{0,158}[a-z0-9])?$", RegexOptions.CultureInvariant)]
     private static partial Regex SlugPattern();
+
+    [GeneratedRegex("^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$", RegexOptions.CultureInvariant)]
+    private static partial Regex CategorySlugPattern();
 }

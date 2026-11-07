@@ -1,0 +1,162 @@
+@page "/Management/Articles/Categories"
+@attribute [Authorize(Policy = "ManagePortal")]
+@layout ManagementLayout
+@inject ArticleAdministrationService ArticlesService
+
+<PageTitle>Chuyên mục · Melrandia</PageTitle>
+
+<section class="management-page-heading compact">
+    <div><h1>Chủ đề &amp; Danh mục</h1><p>Phân loại nội dung và quản lý các chủ đề của blog.</p></div>
+    <button class="management-primary-action" type="button" data-category-modal-open><i class="bi bi-plus-lg" aria-hidden="true"></i> Thêm chủ đề mới</button>
+</section>
+
+@if (Status == "created") { <div class="form-notice success">Đã tạo chuyên mục.</div> }
+else if (Status == "updated") { <div class="form-notice success">Đã cập nhật chuyên mục.</div> }
+else if (Status == "enabled") { <div class="form-notice success">Chuyên mục đã được hiển thị công khai.</div> }
+else if (Status == "disabled") { <div class="form-notice success">Chuyên mục đã được ẩn khỏi website công khai.</div> }
+else if (Status == "deleted") { <div class="form-notice success">Đã xóa chuyên mục.</div> }
+@if (!string.IsNullOrWhiteSpace(Error)) { <div class="form-notice error">@Error</div> }
+@if (!string.IsNullOrWhiteSpace(LoadError)) { <div class="form-notice error">@LoadError</div> }
+
+<section class="management-kpi-grid category-kpi-grid" aria-label="Thống kê chuyên mục">
+    <article><span class="kpi-icon blue"><i class="bi bi-collection" aria-hidden="true"></i></span><div><small>Tổng chủ đề</small><strong>@Categories.Count</strong><em>Đã đăng ký</em></div></article>
+    <article><span class="kpi-icon green"><i class="bi bi-globe2" aria-hidden="true"></i></span><div><small>Đang công khai</small><strong>@Categories.Count(x => x.IsEnabled)</strong><em>Hiển thị trên website</em></div></article>
+    <article><span class="kpi-icon violet"><i class="bi bi-journal-text" aria-hidden="true"></i></span><div><small>Bài viết đã xuất bản</small><strong>@Categories.Sum(x => x.PublishedArticleCount)</strong><em>Trong các chủ đề</em></div></article>
+</section>
+
+@if (ShowForm)
+{
+    <dialog class="project-modal category-modal" data-category-modal data-open-on-load="true" aria-labelledby="category-modal-title">
+        <div class="project-modal-card">
+            <header class="project-modal-header">
+                <div><h2 id="category-modal-title">@(EditId.HasValue ? "Chỉnh sửa chuyên mục" : "Thêm chủ đề mới")</h2><p>Thông tin này được sử dụng trên trang bài viết công khai.</p></div>
+                <button class="project-modal-close" type="button" data-category-modal-close aria-label="Đóng cửa sổ">×</button>
+            </header>
+            <form class="portal-form category-form" method="post" action="/management/articles/categories/save">
+                <AntiforgeryToken />
+                <input type="hidden" name="id" value="@EditId" />
+                <div class="form-grid two">
+                    <label><span>Tên chủ đề</span><input name="displayName" value="@FormDisplayName" data-category-name maxlength="120" placeholder="Ví dụ: Khoa học vũ trụ" required /></label>
+                    <label><span>Slug URL</span><input name="slug" value="@FormSlug" data-category-slug data-auto-generated="@(!EditId.HasValue ? "true" : "false")" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" maxlength="80" placeholder="khoa-hoc-vu-tru" required /><small class="field-help">Đổi slug sẽ làm thay đổi đường dẫn công khai của chủ đề và bài viết.</small></label>
+                </div>
+                <label><span>Mô tả</span><textarea name="summary" rows="3" maxlength="500" placeholder="Mô tả ngắn về chủ đề này..." required>@FormSummary</textarea></label>
+                <div class="form-grid two category-form-options">
+                    <label><span>Thứ tự hiển thị</span><input type="number" name="displayOrder" value="@FormDisplayOrder" min="0" max="9999" required /><small class="field-help">Số nhỏ hơn sẽ xuất hiện trước.</small></label>
+                    <label class="single-checkbox"><input type="checkbox" name="isEnabled" checked="@FormIsEnabled" /> Hiển thị trên website công khai</label>
+                </div>
+                <div class="category-form-actions">
+                    <button class="management-primary-action" type="submit">@(EditId.HasValue ? "Lưu thay đổi" : "Tạo chủ đề")</button>
+                    <button class="management-secondary-action" type="button" data-category-modal-close>Hủy</button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+}
+
+<section class="management-panel category-list-panel">
+    <header class="panel-toolbar">
+        <div><h2>Danh mục chủ đề</h2><p>@Categories.Count chủ đề đã đăng ký.</p></div>
+        <label class="compact-select"><select data-management-status-filter aria-label="Lọc chuyên mục"><option value="all">Tất cả chuyên mục</option><option value="enabled">Đang công khai</option><option value="disabled">Đang ẩn</option></select></label>
+    </header>
+    @if (Categories.Count == 0)
+    {
+        <div class="management-empty-state compact"><span class="material-symbols-outlined" aria-hidden="true">category</span><h3>Chưa có chuyên mục</h3><p>Tạo chủ đề đầu tiên để phân loại bài viết.</p></div>
+    }
+    else
+    {
+        <div class="category-card-grid">
+            @foreach (var category in Categories)
+            {
+                var accent = AccentClass(category.DisplayOrder);
+                var statusClass = category.IsEnabled ? "enabled" : "disabled";
+                <article class="category-admin-card @accent" data-status="@statusClass" data-search-item="@($"{category.DisplayName} {category.Slug} {category.Summary}")">
+                    <div class="category-admin-card-top">
+                        <span class="category-admin-icon"><i class="bi bi-bookmark-star-fill" aria-hidden="true"></i></span>
+                        <span class="category-admin-status @statusClass"><i aria-hidden="true"></i>@(category.IsEnabled ? "Đang công khai" : "Đang ẩn")</span>
+                    </div>
+                    <h3>@category.DisplayName</h3>
+                    <span class="category-admin-slug">/bai-viet/@category.Slug</span>
+                    <p>@category.Summary</p>
+                    <div class="category-admin-card-meta">
+                        <span>@category.ArticleCount bài viết</span>
+                        <span>Thứ tự @category.DisplayOrder</span>
+                    </div>
+                    <div class="category-admin-card-actions">
+                        <a class="category-action-edit" href="@($"/Management/Articles/Categories?edit={category.Id}")"><i class="bi bi-pencil-square" aria-hidden="true"></i> Chỉnh sửa</a>
+                        <form method="post" action="/management/articles/categories/toggle" onsubmit="return confirm('Thay đổi trạng thái hiển thị chuyên mục này?');">
+                            <AntiforgeryToken />
+                            <input type="hidden" name="id" value="@category.Id" />
+                            <input type="hidden" name="isEnabled" value="@(!category.IsEnabled)" />
+                            <button class="category-action-toggle" type="submit" title="@(category.IsEnabled ? "Ẩn chuyên mục" : "Hiển thị chuyên mục")"><i class="bi @(category.IsEnabled ? "bi-eye-slash" : "bi-eye")" aria-hidden="true"></i><span>@(category.IsEnabled ? "Ẩn" : "Hiển thị")</span></button>
+                        </form>
+                        @if (category.ArticleCount == 0)
+                        {
+                            <form method="post" action="/management/articles/categories/delete" onsubmit="return confirm('Xóa vĩnh viễn chuyên mục này? Thao tác này không thể hoàn tác.');">
+                                <AntiforgeryToken />
+                                <input type="hidden" name="id" value="@category.Id" />
+                                <button class="category-action-delete" type="submit" title="Xóa chuyên mục"><i class="bi bi-trash3" aria-hidden="true"></i><span>Xóa</span></button>
+                            </form>
+                        }
+                        else
+                        {
+                            <span class="category-delete-unavailable" title="Chuyên mục cần không còn bài viết mới được xóa"><i class="bi bi-shield-lock" aria-hidden="true"></i><span>Đang dùng</span></span>
+                        }
+                    </div>
+                </article>
+            }
+        </div>
+    }
+</section>
+
+@code {
+    [SupplyParameterFromQuery(Name = "status")] public string? Status { get; set; }
+    [SupplyParameterFromQuery(Name = "error")] public string? Error { get; set; }
+    [SupplyParameterFromQuery(Name = "edit")] public Guid? EditId { get; set; }
+    [SupplyParameterFromQuery(Name = "create")] public string? Create { get; set; }
+
+    private IReadOnlyList<ArticleCategoryAdminSummary> Categories { get; set; } = [];
+    private bool ShowForm => EditId.HasValue || Create == "true";
+    private string? LoadError { get; set; }
+    private string FormSlug { get; set; } = string.Empty;
+    private string FormDisplayName { get; set; } = string.Empty;
+    private string FormSummary { get; set; } = string.Empty;
+    private string FormDisplayOrder { get; set; } = "0";
+    private bool FormIsEnabled { get; set; } = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Categories = await ArticlesService.GetCategorySnapshotAsync();
+        LoadError = null;
+        if (!EditId.HasValue)
+        {
+            FormSlug = string.Empty;
+            FormDisplayName = string.Empty;
+            FormSummary = string.Empty;
+            FormDisplayOrder = ((Categories.Count == 0 ? 0 : Categories.Max(x => x.DisplayOrder)) + 1).ToString();
+            FormIsEnabled = true;
+            return;
+        }
+
+        var category = Categories.FirstOrDefault(x => x.Id == EditId.Value);
+        if (category is null)
+        {
+            LoadError = "Không tìm thấy chuyên mục cần chỉnh sửa.";
+            return;
+        }
+
+        FormSlug = category.Slug;
+        FormDisplayName = category.DisplayName;
+        FormSummary = category.Summary;
+        FormDisplayOrder = category.DisplayOrder.ToString();
+        FormIsEnabled = category.IsEnabled;
+    }
+
+    private static string AccentClass(int order) => (Math.Abs(order) % 5) switch
+    {
+        0 => "accent-orange",
+        1 => "accent-blue",
+        2 => "accent-purple",
+        3 => "accent-green",
+        _ => "accent-red"
+    };
+}

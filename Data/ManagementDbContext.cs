@@ -93,6 +93,7 @@ public sealed class ManagementDbContext(DbContextOptions<ManagementDbContext> op
             entity.Property(x => x.Slug).HasMaxLength(160);
             entity.Property(x => x.Title).HasMaxLength(240);
             entity.Property(x => x.Summary).HasMaxLength(700);
+            entity.Property(x => x.Tags).HasMaxLength(1000);
             entity.Property(x => x.Status).HasMaxLength(30);
             entity.Property(x => x.ContentMarkdown).HasColumnType("text");
             // EF includes the original version in UPDATE/DELETE so two editors cannot silently
