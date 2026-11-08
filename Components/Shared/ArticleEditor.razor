@@ -14,13 +14,9 @@
 else if (ArticleId is null || Article is not null)
 {
 <div class="post-editor-container">
-    @if (!string.IsNullOrWhiteSpace(SuccessNotice))
+    @if (SaveStatus == "saved")
     {
-        <div class="form-notice success" role="alert">@SuccessNotice</div>
-    }
-    else if (SaveStatus == "saved")
-    {
-        <div class="form-notice success" role="alert">Đã lưu thay đổi bài viết.</div>
+        <div class="form-notice success" data-article-save-success>Đã lưu thay đổi bài viết.</div>
     }
     @if (!string.IsNullOrWhiteSpace(ErrorNotice))
     {
@@ -359,7 +355,6 @@ else
     private bool IsEditing => ArticleId.HasValue;
     private bool IsSaving { get; set; }
     private string? TargetAction { get; set; }
-    private string? SuccessNotice { get; set; }
     private string? ErrorNotice { get; set; }
     private bool IsSlugManual { get; set; }
 
@@ -544,7 +539,6 @@ else
         IsSaving = true;
         TargetAction = targetStatus;
         ErrorNotice = null;
-        SuccessNotice = null;
 
         try
         {
@@ -603,7 +597,7 @@ else
 
             if (IsEditing)
             {
-                SuccessNotice = "Đã lưu thay đổi bài viết thành công.";
+                await JS.InvokeVoidAsync("showNotice", "Đã lưu thay đổi bài viết thành công.", 3000);
                 Article = await ArticlesService.FindAsync(savedId);
                 if (Article != null)
                 {
