@@ -26,7 +26,7 @@
             <div><h2 id="new-project-title">Thêm dự án</h2><p>Mỗi record đại diện cho một hệ thống triển khai độc lập.</p></div>
             <button class="project-modal-close" type="button" data-project-modal-close aria-label="Đóng cửa sổ">×</button>
         </header>
-        <form class="portal-form" method="post" action="/management/projects/save" onsubmit="return confirm('Bạn có chắc chắn muốn thêm dự án này?');">
+        <form class="portal-form" method="post" action="/management/projects/save" data-enhance="false" onsubmit="return confirm('Bạn có chắc chắn muốn thêm dự án này?');">
             <AntiforgeryToken />
             <div class="form-grid two">
                 <label><span>Project key</span><input name="projectKey" placeholder="ams" pattern="[a-z0-9-]+" required /></label>

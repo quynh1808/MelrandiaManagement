@@ -2,6 +2,10 @@
 @attribute [Authorize(Policy = "ManagePortal")]
 @layout ManagementLayout
 @inject ArticleAdministrationService ArticlesService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+@using System.Security.Claims
 
 <PageTitle>Bài viết · Melrandia</PageTitle>
 
@@ -9,10 +13,12 @@
     <div><h1>Bài viết của tôi</h1><p>Quản lý, chỉnh sửa và theo dõi hiệu suất các bài viết blog.</p></div>
     <a class="management-primary-action" href="/Management/Articles/New"><i class="bi bi-pencil-square" aria-hidden="true"></i> Soạn bài viết mới</a>
 </section>
-@if (Status == "deleted") { <div class="form-notice success">Đã xóa bài viết.</div> }
+@if (!string.IsNullOrWhiteSpace(SuccessNotice)) { <div class="form-notice success">@SuccessNotice</div> }
+else if (Status == "deleted") { <div class="form-notice success">Đã xóa bài viết.</div> }
 else if (Status == "duplicated") { <div class="form-notice success">Đã tạo bản nháp sao chép.</div> }
 else if (Status == "saved") { <div class="form-notice success">Đã lưu bài viết và cập nhật Public Article Catalog.</div> }
-@if (!string.IsNullOrWhiteSpace(Error)) { <div class="form-notice error">@Error</div> }
+@if (!string.IsNullOrWhiteSpace(ErrorNotice)) { <div class="form-notice error">@ErrorNotice</div> }
+else if (!string.IsNullOrWhiteSpace(Error)) { <div class="form-notice error">@Error</div> }
 
 <section class="management-kpi-grid">
     <article><span class="kpi-icon blue"><img src="/images/Managements/TotalArticles.svg" alt="" aria-hidden="true" /></span><div><small>Tổng bài viết</small><strong>@Snapshot.Articles.Count</strong><em>PostgreSQL</em></div></article>
@@ -63,16 +69,8 @@ else if (Status == "saved") { <div class="form-notice success">Đã lưu bài vi
                             <div class="article-row-actions">
                                 <a class="article-icon-action preview" href="@($"/Management/Articles/Preview/{article.Id}")" title="Xem trước" aria-label="Xem trước"><span class="material-symbols-outlined" aria-hidden="true">visibility</span></a>
                                 <a class="article-icon-action edit" href="@($"/Management/Articles/Edit/{article.Id}")" title="Chỉnh sửa bài viết" aria-label="Chỉnh sửa"><span class="material-symbols-outlined" aria-hidden="true">edit</span></a>
-                                <form method="post" action="/management/articles/duplicate">
-                                    <AntiforgeryToken />
-                                    <input type="hidden" name="articleId" value="@article.Id" />
-                                    <button class="article-icon-action duplicate" type="submit" title="Nhân bản bài viết" aria-label="Nhân bản"><span class="material-symbols-outlined" aria-hidden="true">content_copy</span></button>
-                                </form>
-                                <form method="post" action="/management/articles/delete" onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài viết &quot;@article.Title&quot;? Thao tác này không thể hoàn tác.');">
-                                    <AntiforgeryToken />
-                                    <input type="hidden" name="articleId" value="@article.Id" />
-                                    <button class="article-icon-action delete" type="submit" title="Xóa bài viết" aria-label="Xóa bài viết"><span class="material-symbols-outlined" aria-hidden="true">delete</span></button>
-                                </form>
+                                <button class="article-icon-action duplicate" type="button" title="Nhân bản bài viết" aria-label="Nhân bản" disabled="@IsProcessing" @onclick="() => DuplicateAsync(article.Id)"><span class="material-symbols-outlined" aria-hidden="true">content_copy</span></button>
+                                <button class="article-icon-action delete" type="button" title="Xóa bài viết" aria-label="Xóa bài viết" disabled="@IsProcessing" @onclick="() => DeleteAsync(article.Id, article.Title)"><span class="material-symbols-outlined" aria-hidden="true">delete</span></button>
                             </div>
                         </td>
                     </tr>
@@ -89,6 +87,9 @@ else if (Status == "saved") { <div class="form-notice success">Đã lưu bài vi
 @code {
     [SupplyParameterFromQuery(Name = "status")] public string? Status { get; set; }
     [SupplyParameterFromQuery(Name = "error")] public string? Error { get; set; }
+    private string? SuccessNotice { get; set; }
+    private string? ErrorNotice { get; set; }
+    private bool IsProcessing { get; set; }
     private ArticleAdminSnapshot Snapshot { get; set; } = new([], []);
     private int DraftAndScheduled => Count(PortalArticleStatuses.Draft) + Count(PortalArticleStatuses.Scheduled);
     private int Count(string status) => Snapshot.Articles.Count(x => x.Status == status);
@@ -100,5 +101,63 @@ else if (Status == "saved") { <div class="form-notice success">Đã lưu bài vi
         PortalArticleStatuses.Archived => "Lưu trữ",
         _ => status
     };
+
     protected override async Task OnInitializedAsync() => Snapshot = await ArticlesService.GetSnapshotAsync();
+
+    private async Task DuplicateAsync(Guid id)
+    {
+        if (IsProcessing) return;
+        IsProcessing = true;
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            if (!Guid.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var authorId))
+            {
+                ErrorNotice = "Không xác định được danh tính người dùng.";
+                return;
+            }
+            var actor = user.Identity?.Name ?? "unknown";
+            var duplicateId = await ArticlesService.DuplicateAsync(id, authorId, actor);
+            Snapshot = await ArticlesService.GetSnapshotAsync();
+            SuccessNotice = "Đã tạo bản nháp sao chép.";
+            ErrorNotice = null;
+        }
+        catch (Exception ex)
+        {
+            ErrorNotice = ex.Message;
+            SuccessNotice = null;
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    private async Task DeleteAsync(Guid id, string title)
+    {
+        if (IsProcessing) return;
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"Bạn có chắc chắn muốn xóa bài viết \"{title}\"? Thao tác này không thể hoàn tác.");
+        if (!confirmed) return;
+
+        IsProcessing = true;
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var actor = authState.User.Identity?.Name ?? "unknown";
+            await ArticlesService.DeleteAsync(id, actor);
+            Snapshot = await ArticlesService.GetSnapshotAsync();
+            SuccessNotice = "Đã xóa bài viết.";
+            ErrorNotice = null;
+        }
+        catch (Exception ex)
+        {
+            ErrorNotice = ex.Message;
+            SuccessNotice = null;
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
 }

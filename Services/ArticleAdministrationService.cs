@@ -10,7 +10,7 @@ namespace MelrandiaManagement.Services;
 
 public sealed record SaveArticleRequest(Guid? Id, Guid CategoryId, string Slug, string Title,
     string Summary, string Tags, string ContentMarkdown, string Status, DateTime? PublishedAtUtc,
-    string CoverAlt, int Version);
+    string CoverAlt, int Version, string? PresetCoverUrl = null, bool RemoveCover = false);
 
 /// <summary>Editorial use cases, upload compensation, workflow validation and audit.</summary>
 public sealed partial class ArticleAdministrationService(
@@ -281,10 +281,20 @@ public sealed partial class ArticleAdministrationService(
                 stored.Add(await mediaStorage.SaveAsync(file, article.Id, cancellationToken));
 
             article.CategoryId = request.CategoryId;
-            article.Slug = string.IsNullOrWhiteSpace(request.Slug) &&
+            var rawSlug = string.IsNullOrWhiteSpace(request.Slug) &&
                 request.Status == PortalArticleStatuses.Draft
                 ? isNew ? $"ban-nhap-{Guid.NewGuid():N}"[..21] : article.Slug
                 : request.Slug.Trim().ToLowerInvariant();
+
+            var uniqueSlug = rawSlug;
+            var counter = 1;
+            while (await db.Articles.AnyAsync(x => x.Slug == uniqueSlug && x.Id != article.Id, cancellationToken))
+            {
+                var suffix = $"-{++counter}";
+                var prefixLength = Math.Min(rawSlug.Length, 160 - suffix.Length);
+                uniqueSlug = $"{rawSlug[..prefixLength]}{suffix}";
+            }
+            article.Slug = uniqueSlug;
             article.Title = request.Title.Trim();
             article.Summary = request.Summary.Trim();
             article.Tags = NormalizeTags(request.Tags);
@@ -298,7 +308,50 @@ public sealed partial class ArticleAdministrationService(
             var nextOrder = article.Media.Count == 0 ? 0 : article.Media.Max(x => x.DisplayOrder) + 1;
             var coverCount = coverFiles.Count;
             if (coverCount > 0)
+            {
                 foreach (var oldCover in article.Media.Where(x => x.IsCover)) oldCover.IsCover = false;
+            }
+            else if (request.RemoveCover)
+            {
+                foreach (var oldCover in article.Media.Where(x => x.IsCover)) oldCover.IsCover = false;
+            }
+            else if (!string.IsNullOrWhiteSpace(request.PresetCoverUrl))
+            {
+                var presetMedia = await db.ArticleMedia.AsNoTracking().FirstOrDefaultAsync(x => x.PublicUrl == request.PresetCoverUrl, cancellationToken);
+                if (presetMedia != null)
+                {
+                    foreach (var oldCover in article.Media.Where(x => x.IsCover)) oldCover.IsCover = false;
+                    var existingInArticle = article.Media.FirstOrDefault(x => x.StoragePath == presetMedia.StoragePath);
+                    if (existingInArticle != null)
+                    {
+                        existingInArticle.IsCover = true;
+                        if (!string.IsNullOrWhiteSpace(request.CoverAlt)) existingInArticle.AltText = request.CoverAlt.Trim();
+                    }
+                    else
+                    {
+                        article.Media.Add(new PortalArticleMedia
+                        {
+                            StoragePath = presetMedia.StoragePath,
+                            PublicUrl = presetMedia.PublicUrl,
+                            OriginalFileName = presetMedia.OriginalFileName,
+                            MimeType = presetMedia.MimeType,
+                            FileSize = presetMedia.FileSize,
+                            IsCover = true,
+                            AltText = !string.IsNullOrWhiteSpace(request.CoverAlt)
+                                ? request.CoverAlt.Trim() : presetMedia.AltText,
+                            DisplayOrder = nextOrder++
+                        });
+                    }
+                }
+            }
+            else
+            {
+                var existingCover = article.Media.FirstOrDefault(x => x.IsCover);
+                if (existingCover != null && !string.IsNullOrWhiteSpace(request.CoverAlt))
+                {
+                    existingCover.AltText = request.CoverAlt.Trim();
+                }
+            }
             for (var index = 0; index < stored.Count; index++)
             {
                 var file = stored[index];
@@ -327,6 +380,16 @@ public sealed partial class ArticleAdministrationService(
             await db.SaveChangesAsync(cancellationToken);
             publicCatalog.Invalidate();
             return article.Id;
+        }
+        catch (DbUpdateException ex)
+        {
+            foreach (var file in stored)
+                await mediaStorage.DeleteIfExistsAsync(file.StoragePath);
+            if (ex.InnerException?.Message.Contains("IX_articles_Slug", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                throw new InvalidOperationException("Đường dẫn (Slug) này đã tồn tại trong hệ thống. Vui lòng chọn đường dẫn khác.");
+            }
+            throw;
         }
         catch
         {

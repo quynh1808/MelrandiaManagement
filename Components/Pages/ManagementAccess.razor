@@ -13,7 +13,7 @@
 
 <section class="management-panel access-grant-panel">
     <header><div><h2>Cấp hoặc thay đổi quyền</h2><p>Một user chỉ có một role hiệu lực trên mỗi project.</p></div></header>
-    <form class="portal-form inline-grant-form" method="post" action="/management/access/grant" onsubmit="return confirm('Bạn có chắc chắn muốn áp dụng quyền này?');">
+    <form class="portal-form inline-grant-form" method="post" action="/management/access/grant" data-enhance="false" onsubmit="return confirm('Bạn có chắc chắn muốn áp dụng quyền này?');">
         <AntiforgeryToken />
         <label><span>Tài khoản</span><select name="userId" required>@foreach (var user in Users) { <option value="@user.Id">@user.DisplayName (@user.Username)</option> }</select></label>
         <label><span>Dự án</span><select name="projectId" required>@foreach (var project in Projects) { <option value="@project.Id">@project.DisplayName</option> }</select></label>
@@ -30,7 +30,7 @@
         <tr><td><strong>@access.Username</strong></td><td>@access.ProjectName</td><td>@access.AccessRole</td><td><span class="table-status @(access.IsEnabled ? "enabled" : "disabled")">@(access.IsEnabled ? "Enabled" : "Revoked")</span></td><td>
             @if (access.IsEnabled)
             {
-                <form method="post" action="/management/access/revoke" onsubmit="return confirm('Bạn có chắc chắn muốn thu hồi quyền này?');"><AntiforgeryToken /><input type="hidden" name="userId" value="@access.UserId" /><input type="hidden" name="projectId" value="@access.ProjectId" /><button class="table-action danger" type="submit">Thu hồi</button></form>
+                <form method="post" action="/management/access/revoke" data-enhance="false" onsubmit="return confirm('Bạn có chắc chắn muốn thu hồi quyền này?');"><AntiforgeryToken /><input type="hidden" name="userId" value="@access.UserId" /><input type="hidden" name="projectId" value="@access.ProjectId" /><button class="table-action danger" type="submit">Thu hồi</button></form>
             }
         </td></tr>
     }

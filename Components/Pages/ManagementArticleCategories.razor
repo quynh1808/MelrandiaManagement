@@ -2,20 +2,25 @@
 @attribute [Authorize(Policy = "ManagePortal")]
 @layout ManagementLayout
 @inject ArticleAdministrationService ArticlesService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IJSRuntime JS
+@using System.Security.Claims
 
 <PageTitle>Chuyên mục · Melrandia</PageTitle>
 
 <section class="management-page-heading compact">
     <div><h1>Chủ đề &amp; Danh mục</h1><p>Phân loại nội dung và quản lý các chủ đề của blog.</p></div>
-    <button class="management-primary-action" type="button" data-category-modal-open><i class="bi bi-plus-lg" aria-hidden="true"></i> Thêm chủ đề mới</button>
+    <button class="management-primary-action" type="button" @onclick="OpenCreateModal"><i class="bi bi-plus-lg" aria-hidden="true"></i> Thêm chủ đề mới</button>
 </section>
 
-@if (Status == "created") { <div class="form-notice success">Đã tạo chuyên mục.</div> }
+@if (!string.IsNullOrWhiteSpace(SuccessNotice)) { <div class="form-notice success">@SuccessNotice</div> }
+else if (Status == "created") { <div class="form-notice success">Đã tạo chuyên mục.</div> }
 else if (Status == "updated") { <div class="form-notice success">Đã cập nhật chuyên mục.</div> }
 else if (Status == "enabled") { <div class="form-notice success">Chuyên mục đã được hiển thị công khai.</div> }
 else if (Status == "disabled") { <div class="form-notice success">Chuyên mục đã được ẩn khỏi website công khai.</div> }
 else if (Status == "deleted") { <div class="form-notice success">Đã xóa chuyên mục.</div> }
-@if (!string.IsNullOrWhiteSpace(Error)) { <div class="form-notice error">@Error</div> }
+@if (!string.IsNullOrWhiteSpace(ErrorNotice)) { <div class="form-notice error">@ErrorNotice</div> }
+else if (!string.IsNullOrWhiteSpace(Error)) { <div class="form-notice error">@Error</div> }
 @if (!string.IsNullOrWhiteSpace(LoadError)) { <div class="form-notice error">@LoadError</div> }
 
 <section class="management-kpi-grid category-kpi-grid" aria-label="Thống kê chuyên mục">
@@ -28,23 +33,25 @@ else if (Status == "deleted") { <div class="form-notice success">Đã xóa chuy�
     <div class="project-modal-card">
         <header class="project-modal-header">
             <div><h2 id="category-modal-title">@(EditId.HasValue ? "Chỉnh sửa chuyên mục" : "Thêm chủ đề mới")</h2><p>Thông tin này được sử dụng trên trang bài viết công khai.</p></div>
-            <button class="project-modal-close" type="button" data-category-modal-close aria-label="Đóng cửa sổ">×</button>
+            <button class="project-modal-close" type="button" @onclick="CloseModal" aria-label="Đóng cửa sổ">×</button>
         </header>
-        <form class="portal-form category-form" method="post" action="/management/articles/categories/save">
-            <AntiforgeryToken />
-            <input type="hidden" name="id" value="@EditId" />
+        @if (!string.IsNullOrWhiteSpace(ModalError))
+        {
+            <div class="form-notice error mt-3" role="alert">@ModalError</div>
+        }
+        <form class="portal-form category-form" @onsubmit="SaveCategoryAsync">
             <div class="form-grid two">
-                <label><span>Tên chủ đề</span><input name="displayName" value="@FormDisplayName" data-category-name maxlength="120" placeholder="Ví dụ: Khoa học vũ trụ" required /></label>
-                <label><span>Slug URL</span><input name="slug" value="@FormSlug" data-category-slug data-auto-generated="@(!EditId.HasValue ? "true" : "false")" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" maxlength="80" placeholder="khoa-hoc-vu-tru" required /><small class="field-help">Đổi slug sẽ làm thay đổi đường dẫn công khai của chủ đề và bài viết.</small></label>
+                <label><span>Tên chủ đề</span><input name="displayName" data-category-name maxlength="120" placeholder="Ví dụ: Khoa học vũ trụ" required @bind="FormDisplayName" @bind:event="oninput" /></label>
+                <label><span>Slug URL</span><input name="slug" data-category-slug pattern="[a-z0-9]+(?:-[a-z0-9]+)*" maxlength="80" placeholder="khoa-hoc-vu-tru" required @bind="FormSlug" @bind:event="oninput" /><small class="field-help">Đổi slug sẽ làm thay đổi đường dẫn công khai của chủ đề và bài viết.</small></label>
             </div>
-            <label><span>Mô tả</span><textarea name="summary" rows="3" maxlength="500" placeholder="Mô tả ngắn về chủ đề này..." required>@FormSummary</textarea></label>
+            <label><span>Mô tả</span><textarea name="summary" rows="3" maxlength="500" placeholder="Mô tả ngắn về chủ đề này..." required @bind="FormSummary"></textarea></label>
             <div class="form-grid two category-form-options">
-                <label><span>Thứ tự hiển thị</span><input type="number" name="displayOrder" value="@FormDisplayOrder" min="0" max="9999" required /><small class="field-help">Số nhỏ hơn sẽ xuất hiện trước.</small></label>
-                <label class="single-checkbox"><input type="checkbox" name="isEnabled" checked="@FormIsEnabled" /> Hiển thị trên website công khai</label>
+                <label><span>Thứ tự hiển thị</span><input type="number" name="displayOrder" min="0" max="9999" required @bind="FormDisplayOrder" /><small class="field-help">Số nhỏ hơn sẽ xuất hiện trước.</small></label>
+                <label class="single-checkbox"><input type="checkbox" name="isEnabled" @bind="FormIsEnabled" /> Hiển thị trên website công khai</label>
             </div>
             <div class="category-form-actions">
-                <button class="management-primary-action" type="submit">@(EditId.HasValue ? "Lưu thay đổi" : "Tạo chủ đề")</button>
-                <button class="management-secondary-action" type="button" data-category-modal-close>Hủy</button>
+                <button class="management-primary-action" type="submit" disabled="@IsProcessing">@(EditId.HasValue ? "Lưu thay đổi" : "Tạo chủ đề")</button>
+                <button class="management-secondary-action" type="button" @onclick="CloseModal">Hủy</button>
             </div>
         </form>
     </div>
@@ -79,20 +86,11 @@ else if (Status == "deleted") { <div class="form-notice success">Đã xóa chuy�
                         <span>Thứ tự @category.DisplayOrder</span>
                     </div>
                     <div class="category-admin-card-actions">
-                        <a class="category-action-edit" href="@($"/Management/Articles/Categories?edit={category.Id}")"><i class="bi bi-pencil-square" aria-hidden="true"></i> Chỉnh sửa</a>
-                        <form method="post" action="/management/articles/categories/toggle" onsubmit="return confirm('Thay đổi trạng thái hiển thị chuyên mục này?');">
-                            <AntiforgeryToken />
-                            <input type="hidden" name="id" value="@category.Id" />
-                            <input type="hidden" name="isEnabled" value="@(!category.IsEnabled)" />
-                            <button class="category-action-toggle" type="submit" title="@(category.IsEnabled ? "Ẩn chuyên mục" : "Hiển thị chuyên mục")"><i class="bi @(category.IsEnabled ? "bi-eye-slash" : "bi-eye")" aria-hidden="true"></i><span>@(category.IsEnabled ? "Ẩn" : "Hiển thị")</span></button>
-                        </form>
+                        <button class="category-action-edit" type="button" @onclick="() => OpenEditModal(category)"><i class="bi bi-pencil-square" aria-hidden="true"></i> Chỉnh sửa</button>
+                        <button class="category-action-toggle" type="button" disabled="@IsProcessing" @onclick="() => ToggleCategoryAsync(category)" title="@(category.IsEnabled ? "Ẩn chuyên mục" : "Hiển thị chuyên mục")"><i class="bi @(category.IsEnabled ? "bi-eye-slash" : "bi-eye")" aria-hidden="true"></i><span>@(category.IsEnabled ? "Ẩn" : "Hiển thị")</span></button>
                         @if (category.ArticleCount == 0)
                         {
-                            <form method="post" action="/management/articles/categories/delete" onsubmit="return confirm('Xóa vĩnh viễn chuyên mục này? Thao tác này không thể hoàn tác.');">
-                                <AntiforgeryToken />
-                                <input type="hidden" name="id" value="@category.Id" />
-                                <button class="category-action-delete" type="submit" title="Xóa chuyên mục"><i class="bi bi-trash3" aria-hidden="true"></i><span>Xóa</span></button>
-                            </form>
+                            <button class="category-action-delete" type="button" disabled="@IsProcessing" @onclick="() => DeleteCategoryAsync(category)" title="Xóa chuyên mục"><i class="bi bi-trash3" aria-hidden="true"></i><span>Xóa</span></button>
                         }
                         else
                         {
@@ -114,6 +112,11 @@ else if (Status == "deleted") { <div class="form-notice success">Đã xóa chuy�
     private IReadOnlyList<ArticleCategoryAdminSummary> Categories { get; set; } = [];
     private bool ShowForm => EditId.HasValue || Create == "true";
     private string? LoadError { get; set; }
+    private string? SuccessNotice { get; set; }
+    private string? ErrorNotice { get; set; }
+    private string? ModalError { get; set; }
+    private bool IsProcessing { get; set; }
+
     private string FormSlug { get; set; } = string.Empty;
     private string FormDisplayName { get; set; } = string.Empty;
     private string FormSummary { get; set; } = string.Empty;
@@ -126,11 +129,10 @@ else if (Status == "deleted") { <div class="form-notice success">Đã xóa chuy�
         LoadError = null;
         if (!EditId.HasValue)
         {
-            FormSlug = string.Empty;
-            FormDisplayName = string.Empty;
-            FormSummary = string.Empty;
-            FormDisplayOrder = ((Categories.Count == 0 ? 0 : Categories.Max(x => x.DisplayOrder)) + 1).ToString();
-            FormIsEnabled = true;
+            if (Create == "true")
+            {
+                await OpenCreateModal();
+            }
             return;
         }
 
@@ -141,11 +143,125 @@ else if (Status == "deleted") { <div class="form-notice success">Đã xóa chuy�
             return;
         }
 
+        await OpenEditModal(category);
+    }
+
+    private async Task OpenCreateModal()
+    {
+        EditId = null;
+        FormSlug = string.Empty;
+        FormDisplayName = string.Empty;
+        FormSummary = string.Empty;
+        FormDisplayOrder = ((Categories.Count == 0 ? 0 : Categories.Max(x => x.DisplayOrder)) + 1).ToString();
+        FormIsEnabled = true;
+        ModalError = null;
+        await JS.InvokeVoidAsync("eval", "document.querySelector('[data-category-modal]')?.showModal()");
+    }
+
+    private async Task OpenEditModal(ArticleCategoryAdminSummary category)
+    {
+        EditId = category.Id;
         FormSlug = category.Slug;
         FormDisplayName = category.DisplayName;
         FormSummary = category.Summary;
         FormDisplayOrder = category.DisplayOrder.ToString();
         FormIsEnabled = category.IsEnabled;
+        ModalError = null;
+        await JS.InvokeVoidAsync("eval", "document.querySelector('[data-category-modal]')?.showModal()");
+    }
+
+    private async Task CloseModal()
+    {
+        EditId = null;
+        ModalError = null;
+        await JS.InvokeVoidAsync("eval", "document.querySelector('[data-category-modal]')?.close()");
+    }
+
+    private async Task SaveCategoryAsync()
+    {
+        if (IsProcessing) return;
+        IsProcessing = true;
+        ModalError = null;
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var actor = authState.User.Identity?.Name ?? "unknown";
+            var request = new SaveArticleCategoryRequest(
+                EditId,
+                FormSlug,
+                FormDisplayName,
+                FormSummary,
+                int.TryParse(FormDisplayOrder, out var order) ? order : 0,
+                FormIsEnabled);
+
+            await ArticlesService.SaveCategoryAsync(request, actor);
+            Categories = await ArticlesService.GetCategorySnapshotAsync();
+            SuccessNotice = EditId.HasValue ? "Đã cập nhật chuyên mục." : "Đã tạo chuyên mục.";
+            ErrorNotice = null;
+            await CloseModal();
+        }
+        catch (Exception ex)
+        {
+            ModalError = ex.Message;
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    private async Task ToggleCategoryAsync(ArticleCategoryAdminSummary category)
+    {
+        if (IsProcessing) return;
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Thay đổi trạng thái hiển thị chuyên mục này?");
+        if (!confirmed) return;
+
+        IsProcessing = true;
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var actor = authState.User.Identity?.Name ?? "unknown";
+            await ArticlesService.SetCategoryEnabledAsync(category.Id, !category.IsEnabled, actor);
+            Categories = await ArticlesService.GetCategorySnapshotAsync();
+            SuccessNotice = !category.IsEnabled ? "Chuyên mục đã được hiển thị công khai." : "Chuyên mục đã được ẩn khỏi website công khai.";
+            ErrorNotice = null;
+        }
+        catch (Exception ex)
+        {
+            ErrorNotice = ex.Message;
+            SuccessNotice = null;
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    private async Task DeleteCategoryAsync(ArticleCategoryAdminSummary category)
+    {
+        if (IsProcessing) return;
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Xóa vĩnh viễn chuyên mục này? Thao tác này không thể hoàn tác.");
+        if (!confirmed) return;
+
+        IsProcessing = true;
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var actor = authState.User.Identity?.Name ?? "unknown";
+            await ArticlesService.DeleteCategoryAsync(category.Id, actor);
+            Categories = await ArticlesService.GetCategorySnapshotAsync();
+            SuccessNotice = "Đã xóa chuyên mục.";
+            ErrorNotice = null;
+        }
+        catch (Exception ex)
+        {
+            ErrorNotice = ex.Message;
+            SuccessNotice = null;
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
     }
 
     private static string AccentClass(int order) => (Math.Abs(order) % 5) switch

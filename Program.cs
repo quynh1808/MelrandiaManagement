@@ -69,7 +69,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/access-denied";
     options.Cookie.Name = "MelrandiaManagement.Auth";
     options.Cookie.HttpOnly = true;
-    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.SameSite = SameSiteMode.Lax;
     options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
     options.SlidingExpiration = true;
@@ -168,23 +168,39 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
 
 app.MapPost("/auth/login", async (HttpContext http, IAntiforgery antiforgery,
     SignInManager<PortalUser> signInManager, UserManager<PortalUser> userManager,
-    PortalAdministrationService administration, CancellationToken cancellationToken) =>
+    PortalAdministrationService administration, ILogger<Program> logger,
+    CancellationToken cancellationToken) =>
 {
-    await antiforgery.ValidateRequestAsync(http);
+    try
+    {
+        await antiforgery.ValidateRequestAsync(http);
+    }
+    catch (AntiforgeryValidationException exception)
+    {
+        logger.LogWarning(exception, "Lỗi kiểm tra Antiforgery khi đăng nhập.");
+        return Results.Redirect("/login?error=antiforgery");
+    }
+
     var form = await http.Request.ReadFormAsync(cancellationToken);
     var username = form["username"].ToString().Trim();
     var password = form["password"].ToString();
     var returnUrl = SafeLocalReturnUrl(form["returnUrl"].ToString(), "/Management");
     var user = await userManager.FindByNameAsync(username);
     if (user is null || !user.IsEnabled)
+    {
+        logger.LogWarning("Đăng nhập thất bại: Tài khoản {Username} không tồn tại hoặc bị khóa.", username);
         return Results.Redirect($"/login?error=invalid&username={Uri.EscapeDataString(username)}&returnUrl={Uri.EscapeDataString(returnUrl)}");
+    }
 
     var result = await signInManager.PasswordSignInAsync(user, password, false, lockoutOnFailure: true);
     if (result.Succeeded)
     {
+        logger.LogInformation("Người dùng {Username} đăng nhập thành công.", username);
         await administration.RecordLoginAsync(user, cancellationToken);
         return Results.Redirect(returnUrl);
     }
+
+    logger.LogWarning("Mật khẩu không đúng cho {Username}: IsLockedOut={IsLockedOut}.", username, result.IsLockedOut);
     var error = result.IsLockedOut ? "locked" : "invalid";
     return Results.Redirect($"/login?error={error}&username={Uri.EscapeDataString(username)}&returnUrl={Uri.EscapeDataString(returnUrl)}");
 }).AllowAnonymous().RequireRateLimiting("login");

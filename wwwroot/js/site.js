@@ -6,7 +6,7 @@
     let pendingArticleNavigation = null;
     let allowArticleNavigation = false;
 
-    function showNotice(message, duration = 2800) {
+    function showNotice(message, duration = 3000) {
         const notice = document.getElementById("site-notice");
         if (!notice) return;
         window.clearTimeout(noticeTimer);
@@ -14,6 +14,7 @@
         notice.classList.add("is-visible");
         noticeTimer = window.setTimeout(() => notice.classList.remove("is-visible"), duration);
     }
+    window.showNotice = showNotice;
 
     function updateThemeControl(theme, animate) {
         const button = document.querySelector("[data-theme-toggle]");
@@ -327,19 +328,12 @@
             }
 
             if (action.dataset.articleLeaveAction === "save" && form) {
-                const draftRadio = form.querySelector("input[name='status'][value='Draft']");
-                if (draftRadio) draftRadio.checked = true;
-                const category = form.querySelector("[name='categoryId']");
-                if (!category?.reportValidity()) return;
-                const returnUrl = form.querySelector("[data-article-return-url]");
-                if (returnUrl && navigation) {
-                    const destination = new URL(navigation, window.location.href);
-                    returnUrl.value = destination.origin === window.location.origin
-                        ? `${destination.pathname}${destination.search}${destination.hash}`
-                        : "";
+                const draftButton = form.querySelector(".post-editor-btn-draft");
+                if (draftButton) {
+                    allowArticleNavigation = true;
+                    draftButton.click();
+                    return;
                 }
-                allowArticleNavigation = true;
-                form.submit();
             }
             return;
         }

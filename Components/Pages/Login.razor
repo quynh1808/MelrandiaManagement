@@ -34,7 +34,7 @@
                 <div class="form-notice error" role="alert">@ErrorMessage</div>
             }
 
-            <form class="portal-form auth-form-fields" method="post" action="/auth/login">
+            <form class="portal-form auth-form-fields" method="post" action="/auth/login" data-enhance="false">
                 <AntiforgeryToken />
                 <input type="hidden" name="returnUrl" value="@SafeReturnUrl" />
                 <label>
@@ -80,6 +80,7 @@
     {
         "locked" => "Tài khoản tạm khóa do đăng nhập sai quá số lần cho phép.",
         "invalid" => "Tên đăng nhập hoặc mật khẩu không đúng.",
+        "antiforgery" => "Phiên làm việc đã hết hạn. Vui lòng thử lại.",
         _ => string.Empty
     };
 }

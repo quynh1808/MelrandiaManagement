@@ -1,5 +1,11 @@
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Http
+@using Microsoft.AspNetCore.Components.Forms
 @inject ArticleAdministrationService ArticlesService
 @inject ArticleMarkdownRenderer MarkdownRenderer
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
 
 @if (IsLoading)
 {
@@ -8,11 +14,19 @@
 else if (ArticleId is null || Article is not null)
 {
 <div class="post-editor-container">
-    @if (SaveStatus == "saved")
+    @if (!string.IsNullOrWhiteSpace(SuccessNotice))
     {
-        <span data-article-save-success hidden>Đã lưu thay đổi bài viết.</span>
+        <div class="form-notice success" role="alert">@SuccessNotice</div>
     }
-    @if (!string.IsNullOrWhiteSpace(SaveError))
+    else if (SaveStatus == "saved")
+    {
+        <div class="form-notice success" role="alert">Đã lưu thay đổi bài viết.</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(ErrorNotice))
+    {
+        <div class="form-notice error" role="alert">@ErrorNotice</div>
+    }
+    else if (!string.IsNullOrWhiteSpace(SaveError))
     {
         <div class="form-notice error" role="alert">@SaveError</div>
     }
@@ -37,18 +51,13 @@ else if (ArticleId is null || Article is not null)
         </div>
     </div>
 
-    <form id="article-editor-form" class="portal-form" data-article-editor-form data-dirty="false" method="post" action="/management/articles/save" enctype="multipart/form-data" onsubmit="return confirm('@(IsEditing ? "Bạn có chắc chắn muốn cập nhật bài viết này?" : "Bạn có chắc chắn muốn lưu bài viết với trạng thái đã chọn?")');">
-        <AntiforgeryToken />
-        <input type="hidden" name="id" value="@ArticleId" />
-        <input type="hidden" name="version" value="@(Article?.Version ?? 1)" />
-        <input type="hidden" name="returnUrl" value="" data-article-return-url />
-
+    <form id="article-editor-form" class="portal-form" data-article-editor-form data-dirty="false" @onsubmit="OnPublishSubmitAsync">
         <div class="row g-4 align-items-start">
             <!-- Left Column: Title, Slug, Rich Text Markdown Editor, Summary (col-lg-8) -->
             <div class="col-lg-8">
                 <!-- Card 1: Title Input -->
                 <div class="post-editor-card">
-                    <input class="post-editor-title-input" name="title" data-article-title minlength="5" maxlength="240" placeholder="Nhập tiêu đề bài viết..." required @bind="Title" @bind:event="oninput" />
+                    <input class="post-editor-title-input" name="title" data-article-title minlength="5" maxlength="240" placeholder="Nhập tiêu đề bài viết..." required value="@Title" @oninput="OnTitleInput" />
                 </div>
 
                 <!-- Card 2: Friendly URL / Slug -->
@@ -57,7 +66,7 @@ else if (ArticleId is null || Article is not null)
                         <span class="post-editor-card-badge"><i class="bi bi-link-45deg"></i></span>
                         <span class="post-editor-slug-label">URL thân thiện:</span>
                         <span class="post-editor-slug-prefix">/bai-viet/</span>
-                        <input class="post-editor-slug-input" name="slug" data-article-slug pattern="[a-z0-9-]+" maxlength="160" placeholder="tieu-de-bai-viet" required @bind="Slug" @bind:event="oninput" />
+                        <input class="post-editor-slug-input" name="slug" data-article-slug pattern="[a-z0-9-]+" maxlength="160" placeholder="tieu-de-bai-viet" required value="@Slug" @oninput="OnSlugInput" />
                     </div>
                     <button class="post-editor-copy-btn" type="button" data-article-copy-slug title="Sao chép liên kết bài viết" aria-label="Sao chép liên kết">
                         <i class="bi bi-copy"></i>
@@ -88,13 +97,12 @@ else if (ArticleId is null || Article is not null)
                             <button class="post-editor-btn" type="button" title="Trích dẫn" data-article-format="quote" data-editor-target="article-body"><i class="bi bi-quote"></i></button>
                             <button class="post-editor-btn" type="button" title="Khối mã nguồn" data-article-format="code" data-editor-target="article-body"><i class="bi bi-code-slash"></i></button>
                             <button class="post-editor-btn" type="button" title="Chèn bảng" data-article-format="table" data-editor-target="article-body"><i class="bi bi-table"></i></button>
-                            <button class="post-editor-btn" type="button" title="Chèn ảnh từ thư viện" data-article-preset-toggle><i class="bi bi-image"></i></button>
+                            <button class="post-editor-btn" type="button" title="Chèn ảnh từ thư viện" @onclick="() => ShowPresets = !ShowPresets"><i class="bi bi-image"></i></button>
                         </div>
                         <textarea id="article-body" class="post-editor-textarea" name="contentMarkdown" rows="18" minlength="50" maxlength="200000" placeholder="Viết nội dung bài viết của bạn ở đây..." required @bind="ContentMarkdown" @bind:event="oninput"></textarea>
                     }
                     else
                     {
-                        <input type="hidden" name="contentMarkdown" value="@ContentMarkdown" />
                         <article class="post-editor-preview">
                             @if (string.IsNullOrWhiteSpace(ContentMarkdown))
                             {
@@ -143,11 +151,13 @@ else if (ArticleId is null || Article is not null)
                             <span>Ảnh đại diện</span>
                             <span class="post-editor-card-help" title="Ảnh tiêu đề chính của bài viết, tỉ lệ khuyến nghị 16:9"><i class="bi bi-question-circle"></i></span>
                         </div>
-                        <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 text-primary fw-semibold" data-article-preset-toggle>Mẫu có sẵn</button>
+                        <button type="button" class="btn btn-sm btn-link text-decoration-none p-0 text-primary fw-semibold" @onclick="() => ShowPresets = !ShowPresets">
+                            @(ShowPresets ? "Đóng mẫu" : "Mẫu có sẵn")
+                        </button>
                     </div>
 
                     <!-- Presets Grid Picker (hidden by default) -->
-                    <div id="article-image-presets" hidden>
+                    <div id="article-image-presets" hidden="@(!ShowPresets)">
                         @if (!AvailableImages.Any())
                         {
                             <p class="small text-body-secondary mb-2">Chưa có ảnh trong hệ thống để chọn mẫu.</p>
@@ -157,7 +167,7 @@ else if (ArticleId is null || Article is not null)
                             <div class="post-editor-preset-grid">
                                 @foreach (var article in AvailableImages)
                                 {
-                                    <div class="post-editor-preset-item" data-article-preset-cover data-image-url="@article.CoverUrl" data-image-alt="@article.Title" title="Chọn làm ảnh bìa: @article.Title">
+                                    <div class="post-editor-preset-item" role="button" @onclick="() => SelectPresetCover(article.CoverUrl, article.Title)" title="Chọn làm ảnh bìa: @article.Title">
                                         <img src="@article.CoverUrl" alt="" loading="lazy" />
                                         <span>@article.Title</span>
                                     </div>
@@ -166,29 +176,29 @@ else if (ArticleId is null || Article is not null)
                         }
                     </div>
 
-                    <!-- Drag & Drop Upload Zone -->
-                    <div class="post-editor-dropzone" data-article-cover-dropzone>
+                    <!-- Click / Drag & Drop Upload Zone -->
+                    <label for="cover-file-input" class="post-editor-dropzone" style="cursor: pointer;">
                         <div class="post-editor-dropzone-icon">
                             <i class="bi bi-cloud-arrow-up"></i>
                         </div>
                         <p class="fw-semibold text-primary mb-1 small">Nhấn để tải ảnh lên</p>
                         <p class="text-body-secondary mb-1" style="font-size: 11px;">Hoặc kéo thả ảnh vào đây</p>
                         <p class="text-muted mb-0" style="font-size: 10px;">(Tối ưu: 1200 x 630px, JPG/PNG/WebP, &lt; 8MB)</p>
-                    </div>
+                    </label>
 
-                    <input name="cover" type="file" accept="image/jpeg,image/png,image/gif,image/webp" data-article-cover-input hidden />
+                    <InputFile id="cover-file-input" OnChange="OnCoverFileSelected" accept="image/jpeg,image/png,image/gif,image/webp" hidden />
 
                     <!-- Image Preview Box -->
-                        <div class="post-editor-preview-container" data-article-cover-preview-container hidden="@(Article?.Media.FirstOrDefault(media => media.IsCover) is null)">
-                            <img data-article-cover-preview data-original-src="@Article?.Media.FirstOrDefault(media => media.IsCover)?.PublicUrl" src="@Article?.Media.FirstOrDefault(media => media.IsCover)?.PublicUrl" alt="@(Article?.Media.FirstOrDefault(media => media.IsCover)?.AltText ?? "Ảnh đại diện xem trước")" class="post-editor-preview-img" />
-                            <button class="post-editor-preview-clear" type="button" title="Bỏ ảnh đã chọn" aria-label="Bỏ ảnh đã chọn" data-article-cover-clear hidden="@(Article?.Media.FirstOrDefault(media => media.IsCover) is not null)">
+                    <div class="post-editor-preview-container" hidden="@(string.IsNullOrWhiteSpace(CoverPreviewUrl))">
+                        <img src="@CoverPreviewUrl" alt="@(CoverAlt ?? "Ảnh đại diện xem trước")" class="post-editor-preview-img" />
+                        <button class="post-editor-preview-clear" type="button" title="Bỏ ảnh đã chọn" aria-label="Bỏ ảnh đã chọn" @onclick="ClearCover">
                             <i class="bi bi-x-lg"></i>
                         </button>
                     </div>
 
                     <!-- Alt Text -->
                     <div class="mt-3">
-                        <input class="form-control form-control-sm rounded-3" name="coverAlt" value="@Article?.Media.FirstOrDefault(media => media.IsCover)?.AltText" maxlength="300" placeholder="Mô tả nội dung ảnh đại diện (cho SEO)..." />
+                        <input class="form-control form-control-sm rounded-3" maxlength="300" placeholder="Mô tả nội dung ảnh đại diện (cho SEO)..." @bind="CoverAlt" />
                     </div>
                 </div>
 
@@ -199,27 +209,38 @@ else if (ArticleId is null || Article is not null)
                         <span>Chuyên mục</span>
                     </div>
                     <div class="post-editor-select-wrap">
-                        <select class="form-select rounded-3 post-editor-category-select" name="categoryId" required>
-                            <option value="" disabled selected="@(!ArticleId.HasValue)">Chọn chuyên mục...</option>
-                            @foreach (var category in Snapshot.Categories.Where(category => category.IsEnabled || category.Id == Article?.CategoryId))
+                        <select class="form-select rounded-3 post-editor-category-select" @bind="SelectedCategoryId" required>
+                            <option value="" disabled selected="@(!SelectedCategoryId.HasValue)">Chọn chuyên mục...</option>
+                            @foreach (var category in Snapshot.Categories.Where(category => category.IsEnabled || category.Id == SelectedCategoryId))
                             {
-                                <option value="@category.Id" selected="@(Article?.CategoryId == category.Id)">@category.DisplayName@(category.IsEnabled ? string.Empty : " (đã ẩn)")</option>
+                                <option value="@category.Id">@category.DisplayName@(category.IsEnabled ? string.Empty : " (đã ẩn)")</option>
                             }
                         </select>
                         <i class="bi bi-chevron-down post-editor-select-arrow" aria-hidden="true"></i>
                     </div>
                 </div>
 
+                <!-- Card 3: Thẻ -->
                 <div class="post-editor-card post-editor-tags-card">
                     <div class="post-editor-card-title mb-2">
                         <span class="post-editor-card-badge"><i class="bi bi-tags"></i></span>
                         <span>Thẻ</span>
                     </div>
-                    <div class="post-editor-tagbox" data-article-tags>
-                        <div class="post-editor-tag-chips" data-article-tag-chips aria-live="polite"></div>
-                        <input class="post-editor-tag-input" type="text" maxlength="40" placeholder="Nhập thẻ rồi nhấn Enter..." aria-label="Nhập thẻ bài viết" data-article-tag-input />
+                    <div class="post-editor-tagbox">
+                        <div class="post-editor-tag-chips" aria-live="polite">
+                            @foreach (var tag in TagList)
+                            {
+                                <span class="post-editor-tag-chip">
+                                    <span>@tag</span>
+                                    <button type="button" aria-label="Xóa thẻ @tag" @onclick="() => RemoveTag(tag)">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                </span>
+                            }
+                        </div>
+                        <input class="post-editor-tag-input" type="text" maxlength="40" placeholder="Nhập thẻ rồi nhấn Enter..." aria-label="Nhập thẻ bài viết"
+                               @bind="CurrentTagInput" @bind:event="oninput" @onkeydown="HandleTagKeyDown" />
                     </div>
-                    <input type="hidden" name="tags" value="@Tags" data-article-tag-values />
                     <small class="text-body-secondary d-block mt-2">Tối đa 20 thẻ, mỗi thẻ không quá 40 ký tự.</small>
                 </div>
 
@@ -230,22 +251,22 @@ else if (ArticleId is null || Article is not null)
                         <span>Trạng thái</span>
                     </div>
                     <div class="post-editor-radio-list">
-                        <label class="post-editor-radio-item @(SelectedStatus == "Draft" ? "is-selected" : "")">
-                            <input class="post-editor-radio-input" type="radio" name="status" value="Draft" checked="@(SelectedStatus == "Draft")" @onchange='() => SelectedStatus = "Draft"' />
+                        <label class="post-editor-radio-item @(SelectedStatus == PortalArticleStatuses.Draft ? "is-selected" : "")">
+                            <input class="post-editor-radio-input" type="radio" name="status" value="Draft" checked="@(SelectedStatus == PortalArticleStatuses.Draft)" @onchange='() => SelectedStatus = PortalArticleStatuses.Draft' />
                             <div class="post-editor-radio-body">
                                 <p class="post-editor-radio-label">Nháp</p>
                                 <p class="post-editor-radio-desc">Chỉ mình bạn có thể xem</p>
                             </div>
                         </label>
-                        <label class="post-editor-radio-item @(SelectedStatus == "Published" ? "is-selected" : "")">
-                            <input class="post-editor-radio-input" type="radio" name="status" value="Published" checked="@(SelectedStatus == "Published")" @onchange='() => SelectedStatus = "Published"' />
+                        <label class="post-editor-radio-item @(SelectedStatus == PortalArticleStatuses.Published ? "is-selected" : "")">
+                            <input class="post-editor-radio-input" type="radio" name="status" value="Published" checked="@(SelectedStatus == PortalArticleStatuses.Published)" @onchange='() => SelectedStatus = PortalArticleStatuses.Published' />
                             <div class="post-editor-radio-body">
                                 <p class="post-editor-radio-label">Công khai</p>
                                 <p class="post-editor-radio-desc">Mọi người có thể xem</p>
                             </div>
                         </label>
-                        <label class="post-editor-radio-item @(SelectedStatus == "Scheduled" ? "is-selected" : "")">
-                            <input class="post-editor-radio-input" type="radio" name="status" value="Scheduled" checked="@(SelectedStatus == "Scheduled")" @onchange='() => SelectedStatus = "Scheduled"' />
+                        <label class="post-editor-radio-item @(SelectedStatus == PortalArticleStatuses.Scheduled ? "is-selected" : "")">
+                            <input class="post-editor-radio-input" type="radio" name="status" value="Scheduled" checked="@(SelectedStatus == PortalArticleStatuses.Scheduled)" @onchange='() => SelectedStatus = PortalArticleStatuses.Scheduled' />
                             <div class="post-editor-radio-body">
                                 <p class="post-editor-radio-label">Lên lịch</p>
                                 <p class="post-editor-radio-desc">Tự động đăng vào thời gian đã chọn</p>
@@ -254,7 +275,7 @@ else if (ArticleId is null || Article is not null)
                         @if (IsEditing && SelectedStatus == PortalArticleStatuses.Archived)
                         {
                             <label class="post-editor-radio-item is-selected">
-                                <input class="post-editor-radio-input" type="radio" name="status" value="Archived" checked @onchange='() => SelectedStatus = "Archived"' />
+                                <input class="post-editor-radio-input" type="radio" name="status" value="Archived" checked @onchange='() => SelectedStatus = PortalArticleStatuses.Archived' />
                                 <div class="post-editor-radio-body">
                                     <p class="post-editor-radio-label">Lưu trữ</p>
                                     <p class="post-editor-radio-desc">Không hiển thị công khai</p>
@@ -270,16 +291,18 @@ else if (ArticleId is null || Article is not null)
                         <span class="post-editor-card-badge"><i class="bi bi-calendar-event"></i></span>
                         <span>Thời gian đăng (nếu có)</span>
                     </div>
-                    <input class="form-control rounded-3 font-monospace" name="publishedAtUtc" type="datetime-local" value="@PublishedAtUtcValue" />
+                    <input class="form-control rounded-3 font-monospace" type="datetime-local" @bind="PublishedAtUtc" />
                     <small class="text-body-secondary d-block mt-1" style="font-size: 11px;">Bắt buộc khi chọn “Đã lên lịch” (giờ UTC).</small>
                 </div>
 
                 <!-- Card 6: Action Buttons -->
                 <div class="post-editor-actions">
-                    <button class="post-editor-btn-draft" type="button" data-article-save-draft>Lưu nháp</button>
-                    <button class="post-editor-btn-publish" type="submit">
+                    <button class="post-editor-btn-draft" type="button" disabled="@IsSaving" @onclick='() => SaveArticleAsync(PortalArticleStatuses.Draft)'>
+                        @(IsSaving && TargetAction == PortalArticleStatuses.Draft ? "Đang lưu..." : "Lưu nháp")
+                    </button>
+                    <button class="post-editor-btn-publish" type="submit" disabled="@IsSaving">
                         <i class="bi @(IsEditing ? "bi-check2-circle" : "bi-send-fill")"></i>
-                        <span>@(IsEditing ? "Lưu thay đổi" : "Đăng bài")</span>
+                        <span>@(IsSaving && TargetAction != PortalArticleStatuses.Draft ? "Đang lưu..." : (IsEditing ? "Lưu thay đổi" : "Đăng bài"))</span>
                     </button>
                 </div>
             </div>
@@ -313,14 +336,32 @@ else
     private string Slug { get; set; } = string.Empty;
     private string ContentMarkdown { get; set; } = string.Empty;
     private string Summary { get; set; } = string.Empty;
-    private string Tags { get; set; } = string.Empty;
-    private string SelectedStatus { get; set; } = "Draft";
+    private List<string> TagList { get; set; } = [];
+    private string CurrentTagInput { get; set; } = string.Empty;
+    private Guid? SelectedCategoryId { get; set; }
+    private string SelectedStatus { get; set; } = PortalArticleStatuses.Draft;
+    private DateTime? PublishedAtUtc { get; set; }
+
+    // Cover image state
+    private bool ShowPresets { get; set; }
+    private string? CoverPreviewUrl { get; set; }
+    private string? CoverAlt { get; set; }
+    private byte[]? CoverBytes { get; set; }
+    private string? CoverFileName { get; set; }
+    private string? CoverContentType { get; set; }
+    private string? PresetCoverUrl { get; set; }
+    private bool IsExistingCoverRemoved { get; set; }
+
     private bool PreviewMode { get; set; }
     private ArticleAdminSnapshot Snapshot { get; set; } = new([], []);
     private ArticleAdminDetail? Article { get; set; }
     private bool IsLoading { get; set; } = true;
     private bool IsEditing => ArticleId.HasValue;
-    private string PublishedAtUtcValue { get; set; } = string.Empty;
+    private bool IsSaving { get; set; }
+    private string? TargetAction { get; set; }
+    private string? SuccessNotice { get; set; }
+    private string? ErrorNotice { get; set; }
+    private bool IsSlugManual { get; set; }
 
     private int WordCount => string.IsNullOrWhiteSpace(ContentMarkdown)
         ? 0
@@ -359,11 +400,261 @@ else
             Title = Article.Title;
             Slug = Article.Slug;
             Summary = Article.Summary;
-            Tags = Article.Tags;
+            TagList = Article.Tags.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).ToList();
             ContentMarkdown = MarkdownRenderer.ToEditorMarkdown(Article.ContentMarkdown);
+            SelectedCategoryId = Article.CategoryId;
             SelectedStatus = Article.Status;
-            PublishedAtUtcValue = Article.PublishedAtUtc?.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm") ?? string.Empty;
+            PublishedAtUtc = Article.PublishedAtUtc?.ToUniversalTime();
+            CoverPreviewUrl = Article.Media.FirstOrDefault(m => m.IsCover)?.PublicUrl;
+            CoverAlt = Article.Media.FirstOrDefault(m => m.IsCover)?.AltText ?? string.Empty;
+            IsSlugManual = true;
+        }
+        else if (Snapshot.Categories.Count > 0 && !SelectedCategoryId.HasValue)
+        {
+            SelectedCategoryId = Snapshot.Categories.FirstOrDefault(c => c.IsEnabled)?.Id;
         }
         IsLoading = false;
+    }
+
+    private void OnTitleInput(ChangeEventArgs e)
+    {
+        Title = e.Value?.ToString() ?? string.Empty;
+        if (!IsSlugManual && !IsEditing)
+        {
+            Slug = GenerateSlug(Title);
+        }
+    }
+
+    private void OnSlugInput(ChangeEventArgs e)
+    {
+        Slug = e.Value?.ToString() ?? string.Empty;
+        IsSlugManual = true;
+    }
+
+    private void AddTag()
+    {
+        var tag = CurrentTagInput.Trim().TrimStart('#');
+        if (string.IsNullOrWhiteSpace(tag)) return;
+        if (tag.Length > 40)
+        {
+            ErrorNotice = "Mỗi thẻ không được vượt quá 40 ký tự.";
+            return;
+        }
+        if (TagList.Any(t => string.Equals(t, tag, StringComparison.OrdinalIgnoreCase)))
+        {
+            CurrentTagInput = string.Empty;
+            return;
+        }
+        if (TagList.Count >= 20)
+        {
+            ErrorNotice = "Bài viết chỉ được có tối đa 20 thẻ.";
+            return;
+        }
+        TagList.Add(tag);
+        CurrentTagInput = string.Empty;
+        ErrorNotice = null;
+    }
+
+    private void RemoveTag(string tag)
+    {
+        TagList.Remove(tag);
+    }
+
+    private void HandleTagKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            AddTag();
+        }
+    }
+
+    private async Task OnCoverFileSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file is null) return;
+        try
+        {
+            if (file.Size > 8 * 1024 * 1024)
+            {
+                ErrorNotice = "Kích thước ảnh không được vượt quá 8MB.";
+                return;
+            }
+            using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            CoverBytes = ms.ToArray();
+            CoverFileName = file.Name;
+            CoverContentType = file.ContentType;
+            CoverPreviewUrl = $"data:{file.ContentType};base64,{Convert.ToBase64String(CoverBytes)}";
+            IsExistingCoverRemoved = false;
+            PresetCoverUrl = null;
+            ErrorNotice = null;
+        }
+        catch (Exception ex)
+        {
+            ErrorNotice = $"Lỗi khi tải ảnh: {ex.Message}";
+        }
+    }
+
+    private void SelectPresetCover(string? url, string? alt)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return;
+        PresetCoverUrl = url;
+        CoverPreviewUrl = url;
+        CoverBytes = null;
+        CoverFileName = null;
+        CoverContentType = null;
+        IsExistingCoverRemoved = false;
+        if (string.IsNullOrWhiteSpace(CoverAlt))
+        {
+            CoverAlt = alt ?? string.Empty;
+        }
+        ShowPresets = false;
+    }
+
+    private void ClearCover()
+    {
+        CoverBytes = null;
+        CoverFileName = null;
+        CoverContentType = null;
+        PresetCoverUrl = null;
+        CoverPreviewUrl = null;
+        IsExistingCoverRemoved = true;
+    }
+
+    private Task OnPublishSubmitAsync()
+    {
+        var targetStatus = IsEditing
+            ? SelectedStatus
+            : (SelectedStatus == PortalArticleStatuses.Scheduled ? PortalArticleStatuses.Scheduled : PortalArticleStatuses.Published);
+        return SaveArticleAsync(targetStatus);
+    }
+
+    private async Task SaveArticleAsync(string targetStatus)
+    {
+        if (IsSaving) return;
+
+        var confirmMessage = targetStatus == PortalArticleStatuses.Draft
+            ? "Bạn có chắc chắn muốn lưu bản nháp này?"
+            : (IsEditing ? "Bạn có chắc chắn muốn cập nhật bài viết này?" : "Bạn có chắc chắn muốn đăng bài viết này?");
+
+        var confirmed = await JS.InvokeAsync<bool>("confirm", confirmMessage);
+        if (!confirmed) return;
+
+        IsSaving = true;
+        TargetAction = targetStatus;
+        ErrorNotice = null;
+        SuccessNotice = null;
+
+        try
+        {
+            if (!SelectedCategoryId.HasValue || SelectedCategoryId == Guid.Empty)
+            {
+                ErrorNotice = "Vui lòng chọn chuyên mục cho bài viết.";
+                return;
+            }
+
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            if (!Guid.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var authorId))
+            {
+                ErrorNotice = "Không thể xác thực thông tin tài khoản đăng bài.";
+                return;
+            }
+            var actor = user.Identity?.Name ?? "unknown";
+
+            DateTime? publishedAt = targetStatus == PortalArticleStatuses.Scheduled
+                ? (PublishedAtUtc.HasValue ? DateTime.SpecifyKind(PublishedAtUtc.Value, DateTimeKind.Utc) : null)
+                : (targetStatus == PortalArticleStatuses.Published ? DateTime.UtcNow : null);
+
+            var tagsJoined = string.Join(", ", TagList);
+            var request = new SaveArticleRequest(
+                ArticleId,
+                SelectedCategoryId.Value,
+                Slug,
+                Title,
+                Summary,
+                tagsJoined,
+                ContentMarkdown,
+                targetStatus,
+                publishedAt,
+                CoverAlt ?? string.Empty,
+                Article?.Version ?? 1,
+                PresetCoverUrl: PresetCoverUrl,
+                RemoveCover: IsExistingCoverRemoved
+            );
+
+            IReadOnlyList<IFormFile> coverFiles = [];
+            if (CoverBytes != null && CoverBytes.Length > 0)
+            {
+                var ms = new MemoryStream(CoverBytes);
+                var formFile = new FormFile(ms, 0, ms.Length, "cover", CoverFileName ?? "cover.jpg")
+                {
+                    Headers = new HeaderDictionary(),
+                    ContentType = CoverContentType ?? "image/jpeg"
+                };
+                coverFiles = [formFile];
+            }
+
+            var savedId = await ArticlesService.SaveAsync(request, coverFiles, [], authorId, actor);
+
+            // Mark form not dirty
+            await JS.InvokeVoidAsync("eval", "document.querySelectorAll('[data-article-editor-form]').forEach(f => f.dataset.dirty = 'false');");
+
+            if (IsEditing)
+            {
+                SuccessNotice = "Đã lưu thay đổi bài viết thành công.";
+                Article = await ArticlesService.FindAsync(savedId);
+                if (Article != null)
+                {
+                    Title = Article.Title;
+                    Slug = Article.Slug;
+                    Summary = Article.Summary;
+                    TagList = Article.Tags.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).ToList();
+                    ContentMarkdown = MarkdownRenderer.ToEditorMarkdown(Article.ContentMarkdown);
+                    SelectedCategoryId = Article.CategoryId;
+                    SelectedStatus = Article.Status;
+                    PublishedAtUtc = Article.PublishedAtUtc?.ToUniversalTime();
+                    CoverPreviewUrl = Article.Media.FirstOrDefault(m => m.IsCover)?.PublicUrl;
+                    CoverAlt = Article.Media.FirstOrDefault(m => m.IsCover)?.AltText ?? string.Empty;
+                    CoverBytes = null;
+                    PresetCoverUrl = null;
+                    IsExistingCoverRemoved = false;
+                }
+            }
+            else
+            {
+                ArticleId = savedId;
+                Navigation.NavigateTo($"/Management/Articles/Edit/{savedId}?status=saved");
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorNotice = ex.Message;
+        }
+        finally
+        {
+            IsSaving = false;
+            TargetAction = null;
+        }
+    }
+
+    private static string GenerateSlug(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+        var normalized = text.Normalize(System.Text.NormalizationForm.FormD);
+        var sb = new System.Text.StringBuilder();
+        foreach (var c in normalized)
+        {
+            var uc = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
+            if (uc != System.Globalization.UnicodeCategory.NonSpacingMark)
+            {
+                if (c is 'đ' or 'Đ') sb.Append('d');
+                else if (char.IsLetterOrDigit(c)) sb.Append(char.ToLowerInvariant(c));
+                else if (c is ' ' or '-' or '_') sb.Append('-');
+            }
+        }
+        var result = System.Text.RegularExpressions.Regex.Replace(sb.ToString(), "-+", "-").Trim('-');
+        return result.Length > 160 ? result[..160] : result;
     }
 }

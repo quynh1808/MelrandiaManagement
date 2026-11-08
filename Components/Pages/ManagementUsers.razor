@@ -22,7 +22,7 @@
 <div class="management-two-column users-layout">
     <section id="new-user" class="management-panel management-form-panel">
         <header><div><h2>Thêm tài khoản</h2><p>Sau khi tạo, cấp project cụ thể tại trang Quyền dự án.</p></div></header>
-        <form class="portal-form" method="post" action="/management/users/create" onsubmit="return confirm('Bạn có chắc chắn muốn tạo tài khoản này?');">
+        <form class="portal-form" method="post" action="/management/users/create" data-enhance="false" onsubmit="return confirm('Bạn có chắc chắn muốn tạo tài khoản này?');">
             <AntiforgeryToken />
             <label><span>Tên đăng nhập</span><input name="username" minlength="3" maxlength="64" autocomplete="off" required /></label>
             <label><span>Tên hiển thị</span><input name="displayName" maxlength="120" required /></label>

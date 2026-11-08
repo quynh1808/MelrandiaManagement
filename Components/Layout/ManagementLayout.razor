@@ -58,7 +58,7 @@
                                 <a href="/Management/Users">Quản lý tài khoản</a>
                                 <a href="/Management/Settings">Thiết lập hệ thống</a>
                                 <a href="/">Trang web công khai</a>
-                                <form method="post" action="/auth/logout" onsubmit="return confirm('Bạn có chắc chắn muốn đăng xuất?');">
+                                <form method="post" action="/auth/logout" data-enhance="false" onsubmit="return confirm('Bạn có chắc chắn muốn đăng xuất?');">
                                     <AntiforgeryToken />
                                     <button type="submit">Đăng xuất</button>
                                 </form>
